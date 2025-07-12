@@ -1,4 +1,5 @@
 import { Timestamp } from "@firebase/firestore-types";
+import { CampState } from "./states";
 
 export enum DbCollections {
   permissions = "permissions",
@@ -24,6 +25,7 @@ export type DbProfile = {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   name: string;
+  defaultCampState: CampState;
 };
 
 export function isProfileComplete(profile: DbProfile | undefined) {
@@ -34,6 +36,7 @@ export type DbCamp = {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   name: string;
+  state: CampState;
   initialInstallmentCents: number;
   installmentCents: number;
   totalCostCents: number;
@@ -44,6 +47,7 @@ export type DbCamp = {
 // keyed by `userId`
 export type DbCampParticipant = {
   createdAt: Timestamp;
+  state: CampState;
 };
 
 export type DbCampParticipantInstallment = {
