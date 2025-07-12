@@ -2,8 +2,29 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /permissions/{userId} {
+      allow read: if request.auth.uid == userId;
+    }
+
+    match /profiles/{userId} {
+      allow read: if request.auth.uid != null;
+      allow write: if request.auth.uid == userId;
+    }
+
+    match /camps/{campId} {
+      allow read: if request.auth.uid != null;
+    }
+
+    match /camps/{campId}/participants/{userId}/{document=**} {
+      allow read: if request.auth.uid != userId;
+    }
+
+    match /stripeCheckoutSessions/{sessionId} {
+      allow read: if request.auth.uid != null && resource.data.userId == request.auth.uid;
+    }
+
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if request.auth.uid != null && get(/databases/$(database)/documents/permissions/$(request.auth.uid)).data.isAdmin == true;
     }
   }
 }

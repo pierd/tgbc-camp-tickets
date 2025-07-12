@@ -1,69 +1,84 @@
-# React + TypeScript + Vite
+# Firebase Authentication App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React application with Firebase authentication supporting email/password and Google sign-in.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔐 Email and password authentication
+- 🌐 Google OAuth authentication
+- 📱 Responsive design
+- 🎨 Modern UI with gradient backgrounds
+- 🔄 Automatic authentication state management
 
-## Expanding the ESLint configuration
+## Setup
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 1. Firebase Configuration
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+1. Create a new Firebase project at [Firebase Console](https://console.firebase.google.com/)
+2. Enable Authentication in your Firebase project:
+   - Go to Authentication > Sign-in method
+   - Enable Email/Password
+   - Enable Google sign-in
+3. Get your Firebase configuration:
+   - Go to Project Settings > General
+   - Scroll down to "Your apps" section
+   - Click on the web app icon (</>) to add a web app
+   - Copy the configuration object
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+### 2. Update Firebase Config
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Replace the placeholder configuration in `src/firebase.ts` with your actual Firebase config:
+
+```typescript
+const firebaseConfig = {
+  apiKey: "your-actual-api-key",
+  authDomain: "your-project.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "your-sender-id",
+  appId: "your-app-id"
+};
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 3. Install Dependencies
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
+
+### 4. Run the Development Server
+
+```bash
+npm run dev
+```
+
+The app will be available at `http://localhost:5173`
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── AuthForm.tsx      # Authentication form component
+│   ├── AuthPage.tsx      # Auth page with login/register toggle
+│   └── Dashboard.tsx     # Main dashboard (placeholder)
+├── contexts/
+│   └── AuthContext.tsx   # Authentication context and hooks
+├── firebase.ts           # Firebase configuration
+├── App.tsx              # Main app component
+└── main.tsx             # App entry point
+```
+
+## Usage
+
+1. **Unauthenticated Users**: Will see the authentication page with options to sign in or register
+2. **Authenticated Users**: Will be redirected to the dashboard
+3. **Logout**: Use the logout button in the dashboard header
+
+## Next Steps
+
+- Add your main app features to the Dashboard component
+- Implement user profile management
+- Add additional authentication providers (GitHub, Twitter, etc.)
+- Set up Firestore for data storage
+- Add protected routes and role-based access control

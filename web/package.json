@@ -10,11 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/react-router-dom": "^5.3.3",
+    "firebase": "^11.10.0",
+    "lodash": "^4.17.21",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-firebase-hooks": "^5.1.1",
+    "react-router-dom": "^7.6.3",
+    "shared": "file:../functions/shared"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
+    "@types/lodash": "^4.17.20",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
