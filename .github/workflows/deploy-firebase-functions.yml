@@ -23,8 +23,8 @@ jobs:
       - uses: google-github-actions/auth@v2
         with:
           # Note: these are not secrets
-          service_account: "github@backdrop-studio.iam.gserviceaccount.com"
-          workload_identity_provider: "projects/692475653554/locations/global/workloadIdentityPools/github/providers/github-repo"
+          service_account: "github@tgbc-camp-tickets.iam.gserviceaccount.com"
+          workload_identity_provider: "projects/785909138910/locations/global/workloadIdentityPools/github/providers/github-repo"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
