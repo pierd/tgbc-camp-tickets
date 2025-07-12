@@ -32,11 +32,18 @@ export function isProfileComplete(profile: DbProfile | undefined) {
   return !!profile?.name;
 }
 
+export enum Currency {
+  AUD = "aud",
+  EURO = "eur",
+  USD = "usd",
+}
+
 export type DbCamp = {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   name: string;
   state: CampState;
+  currency: Currency;
   initialInstallmentCents: number;
   installmentCents: number;
   totalCostCents: number;
