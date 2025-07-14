@@ -1,0 +1,17 @@
+{
+  "name": "tgbc-camp-tickets",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n emulator,shared,functions,web -c \"blue.bold,green.bold,yellow.bold,magenta.bold\" \"firebase emulators:start\" \"pnpm --filter shared dev\" \"pnpm --filter functions dev\" \"pnpm --filter web dev\"",
+    "build": "pnpm --recursive build",
+    "lint": "pnpm --recursive lint",
+    "test": "pnpm --recursive test",
+    "clean": "pnpm --recursive clean",
+    "deploy": "pnpm --filter functions deploy"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "firebase": "^11.10.0",
+    "pnpm": "^10.12.1"
+  }
+}

@@ -1,0 +1,4 @@
+packages:
+  - functions
+  - functions/shared
+  - web
