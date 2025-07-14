@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router-dom';
-import { useIsAdmin, useFirebaseQuery, queryT, orderByT } from '../firebaseHooks';
 import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { DbCollections, type DbCamp, CampState, Currency, campStateDisplayName } from 'shared';
