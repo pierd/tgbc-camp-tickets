@@ -1,11 +1,53 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { useIsAdmin } from '../firebaseHooks';
+import { useIsAdmin, useFirebaseQuery, queryT, orderByT } from '../firebaseHooks';
+import { collection } from 'firebase/firestore';
+import { db } from '../firebase';
+import { DbCollections, type DbCamp, CampState, Currency, campStateDisplayName } from 'shared';
+import CampModal from './CampModal';
 
 export const AdminDashboard: React.FC = () => {
   const { currentUser } = useAuth();
   const isAdmin = useIsAdmin();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [campToEdit, setCampToEdit] = useState<(DbCamp & { id: string }) | undefined>();
+
+  // Get camps from Firebase
+  const campsRef = collection(db, DbCollections.camps);
+  const campsQuery = queryT(campsRef, orderByT('createdAt', 'desc'));
+  const camps = useFirebaseQuery(campsQuery);
+
+  const formatCurrency = (cents: number, currency: Currency) => {
+    const dollars = cents / 100;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    }).format(dollars);
+  };
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'N/A';
+    return new Date(timestamp.seconds * 1000).toLocaleDateString();
+  };
+
+  const handleOpenCreateModal = () => {
+    setModalMode('create');
+    setCampToEdit(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (camp: DbCamp & { id: string }) => {
+    setModalMode('edit');
+    setCampToEdit(camp);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setCampToEdit(undefined);
+  };
 
   if (!isAdmin) {
     return <div>You are not authorized to access this page</div>;
@@ -27,31 +69,71 @@ export const AdminDashboard: React.FC = () => {
 
       <main className="admin-content">
         <div className="admin-section">
-          <h2>Camp Ticket Management</h2>
-          <p>This is the admin dashboard for managing camp tickets.</p>
-
-          <div className="admin-stats">
-            <div className="stat-card">
-              <h3>Total Tickets</h3>
-              <p className="stat-number">0</p>
-            </div>
-            <div className="stat-card">
-              <h3>Sold Tickets</h3>
-              <p className="stat-number">0</p>
-            </div>
-            <div className="stat-card">
-              <h3>Available Tickets</h3>
-              <p className="stat-number">0</p>
-            </div>
+          <div className="section-header">
+            <h2>Camp Management</h2>
+            <button
+              onClick={handleOpenCreateModal}
+              className="btn-primary add-camp-btn"
+            >
+              + Add New Camp
+            </button>
           </div>
 
-          <div className="admin-actions">
-            <button className="admin-btn">Create New Ticket Batch</button>
-            <button className="admin-btn">View All Tickets</button>
-            <button className="admin-btn">Export Data</button>
+          <div className="camps-list">
+            {camps.length === 0 ? (
+              <div className="no-camps">
+                <p>No camps have been created yet. Create your first camp to get started.</p>
+              </div>
+            ) : (
+              camps.map((campDoc) => {
+                const camp = campDoc.data();
+                return (
+                  <div key={campDoc.id} className="camp-card">
+                    <div className="camp-info">
+                      <h3 className="camp-name">{camp.name}</h3>
+                      <div className="camp-details">
+                        <div className="camp-location">
+                          <strong>Location:</strong> {campStateDisplayName[camp.state as CampState] || camp.state}
+                        </div>
+                        <div className="camp-currency">
+                          <strong>Currency:</strong> {camp.currency.toUpperCase()}
+                        </div>
+                        <div className="camp-pricing">
+                          <strong>Total Cost:</strong> {formatCurrency(camp.totalCostCents, camp.currency)}
+                        </div>
+                        <div className="camp-dates">
+                          <strong>Created:</strong> {formatDate(camp.createdAt)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="camp-actions">
+                      <Link
+                        to={`/admin/camp/${campDoc.id}`}
+                        className="btn-secondary view-details-btn"
+                      >
+                        View Details
+                      </Link>
+                      <button
+                        onClick={() => handleOpenEditModal({ ...camp, id: campDoc.id } as DbCamp & { id: string })}
+                        className="btn-primary edit-camp-btn"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </main>
+
+      <CampModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        mode={modalMode}
+        campToEdit={campToEdit}
+      />
     </div>
   );
 };

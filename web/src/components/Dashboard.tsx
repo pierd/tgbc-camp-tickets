@@ -6,6 +6,8 @@ export function Dashboard() {
   const { currentUser, logout } = useAuth();
   const isAdmin = useIsAdmin();
 
+  console.log("currentUser.uid", currentUser?.uid);
+
   const handleLogout = async () => {
     try {
       await logout();
