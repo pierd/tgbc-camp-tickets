@@ -11,7 +11,7 @@ import {
   WithFieldValue,
   getFirestore,
 } from "firebase-admin/firestore";
-import { DbCollections } from "../shared/src/db";
+import { DbCollections } from "shared";
 
 export const db = getFirestore();
 db.settings({ ignoreUndefinedProperties: true });

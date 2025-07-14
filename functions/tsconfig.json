@@ -8,11 +8,15 @@
     "strict": true,
     "target": "es2022",
     "esModuleInterop": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "compileOnSave": true,
   "include": [
-    "src"
+    "src/**/*"
   ],
   "exclude": [
     "shared",
