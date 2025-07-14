@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@firebase/firestore-types": "^3.0.2",
-    "firebase": "^11.0.2"
+    "firebase": "^11.0.2",
+    "zod": "^4.0.5"
   }
 }

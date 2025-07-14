@@ -5,7 +5,6 @@ export enum DbCollections {
   permissions = "permissions",
   profiles = "profiles",
   camps = "camps",
-  // sub-collection of `camps`
   campParticipants = "participants",
   // sub-collection of `campParticipants`
   installments = "installments",
@@ -38,11 +37,14 @@ export enum Currency {
   USD = "usd",
 }
 
+export type CampId = string;
+
 export type DbCamp = {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   name: string;
   state: CampState;
+  lastInstallmentDeadline: Timestamp;
   currency: Currency;
   initialInstallmentCents: number;
   installmentCents: number;
@@ -51,11 +53,23 @@ export type DbCamp = {
   inStateExtraCostCents: number;
 };
 
-// keyed by `userId`
+export function calculateParticipantCostCents(campData: DbCamp, participantState: CampState) {
+  return campData.totalCostCents + (campData.state === participantState ? campData.inStateExtraCostCents : -campData.outOfStateRebateCents);
+}
+
+// keyed by `userId-campId`
 export type DbCampParticipant = {
   createdAt: Timestamp;
+  updatedAt: Timestamp;
+  userId: UserId;
   state: CampState;
+  campId: CampId;
+  paidCents: number;
 };
+
+export function getCampParticipantId({ userId, campId }: { userId: UserId; campId: CampId }) {
+  return `${userId}-${campId}`;
+}
 
 export type DbCampParticipantInstallment = {
   createdAt: Timestamp;
@@ -66,7 +80,7 @@ export type DbStripeCheckoutSession = {
   createdAt: Timestamp;
   sessionId: string;
   userId: UserId;
-  // item: Item; // TODO: add this
+  campId: string;
   /** If set, the session has been paid */
   paidAt?: Timestamp;
   status: "pending" | "succeeded" | "failed";
@@ -74,4 +88,11 @@ export type DbStripeCheckoutSession = {
   sessionUrl: string;
   paymentIntents: string[];
   cents: number;
-};
+} & (
+  {
+    isInitialInstallment: true;
+    participantState: CampState;
+  } | {
+    isInitialInstallment: false;
+  }
+);

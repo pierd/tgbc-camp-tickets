@@ -96,6 +96,9 @@ export const AdminCampDetails: React.FC = () => {
               <div className="detail-item">
                 <strong>Last Updated:</strong> {formatDate(camp.updatedAt)}
               </div>
+              <div className="detail-item">
+                <strong>Last Installment Deadline:</strong> {formatDate(camp.lastInstallmentDeadline)}
+              </div>
             </div>
 
             <div className="detail-card">

@@ -222,6 +222,166 @@
   margin: 0 auto;
 }
 
+.camp-section {
+  margin-bottom: 3rem;
+}
+
+.camp-section h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 0.5rem;
+}
+
+.camps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.no-camps {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  color: #666;
+}
+
+.camp-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-left: 4px solid #667eea;
+}
+
+.camp-card.participating {
+  border-left-color: #28a745;
+}
+
+.camp-card.available {
+  border-left-color: #ffc107;
+}
+
+.camp-card.past {
+  border-left-color: #6c757d;
+}
+
+.camp-card.deadline-approaching {
+  border-left-color: #ffc107;
+  background: linear-gradient(135deg, #fff9c4 0%, #ffffff 100%);
+}
+
+.camp-card.deadline-passed {
+  opacity: 0.7;
+}
+
+.camp-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.camp-info {
+  padding: 1.5rem;
+}
+
+.camp-name {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.camp-details {
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.camp-details > div {
+  margin-bottom: 0.5rem;
+}
+
+.camp-deadline {
+  margin-top: 0.5rem;
+}
+
+.deadline-warning {
+  display: inline-block;
+  margin-left: 0.5rem;
+  color: #856404;
+  background: #fff3cd;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.deadline-passed-text {
+  display: inline-block;
+  margin-left: 0.5rem;
+  color: #721c24;
+  background: #f8d7da;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.participation-info {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 4px;
+}
+
+.camp-actions {
+  padding: 1rem 1.5rem;
+  background: #f8f9fa;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.join-camp-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.join-camp-btn:hover {
+  background: #218838;
+}
+
+.view-details-btn {
+  background: #667eea;
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  display: inline-block;
+}
+
+.view-details-btn:hover {
+  background: #5a6fd8;
+  color: white;
+  text-decoration: none;
+}
+
 .placeholder {
   background: white;
   padding: 2rem;
@@ -644,6 +804,74 @@
   padding: 1.5rem;
 }
 
+.join-camp-form {
+  padding: 1.5rem;
+}
+
+.camp-summary {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.camp-summary h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.camp-info-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.camp-info-grid > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+}
+
+.cost-breakdown {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.cost-breakdown h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.cost-details {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cost-details > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+}
+
+.total-cost {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #667eea;
+  border-top: 1px solid #ddd;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.initial-payment {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #28a745;
+  border-top: 1px solid #ddd;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 /* Money Input Styles */
 .money-input {
   position: relative;
@@ -742,4 +970,116 @@
     margin: 1rem;
     max-height: calc(100vh - 2rem);
   }
+
+  .camps-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .camp-section h2 {
+    font-size: 1.25rem;
+  }
+
+  .dashboard-content {
+    padding: 1rem;
+  }
+
+  .camp-info {
+    padding: 1rem;
+  }
+
+  .camp-actions {
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* Payment Modal Styles */
+.modal-body {
+  padding: 1.5rem;
+}
+
+.payment-summary {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.payment-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.payment-row:last-child {
+  border-bottom: none;
+}
+
+.payment-row-remaining {
+  font-weight: 600;
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+.installment-selection {
+  margin-bottom: 2rem;
+}
+
+.installment-selection label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.installment-selection select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: white;
+}
+
+.installment-selection select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.payment-total {
+  padding: 1rem;
+  background: #e8f5e8;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 1.1rem;
+  color: #28a745;
+  border: 1px solid #c3e6c3;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #eee;
+}
+
+.pay-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 0.5rem;
+}
+
+.pay-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
 }

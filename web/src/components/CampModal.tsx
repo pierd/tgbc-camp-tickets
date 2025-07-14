@@ -24,6 +24,7 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
     totalCostCents: 0,
     outOfStateRebateCents: 0,
     inStateExtraCostCents: 0,
+    lastInstallmentDeadline: '',
   });
 
   // Helper function to convert integer dollars to cents
@@ -35,6 +36,19 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
   // Helper function to convert cents to integer dollars
   const centsToDollars = (cents: number): string => {
     return Math.floor(cents / 100).toString();
+  };
+
+  // Helper function to convert Timestamp to date string for input
+  const timestampToDateString = (timestamp: any): string => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp.seconds * 1000);
+    return date.toISOString().split('T')[0];
+  };
+
+  // Helper function to convert date string to Timestamp
+  const dateStringToTimestamp = (dateString: string): Timestamp => {
+    const date = new Date(dateString);
+    return Timestamp.fromDate(date);
   };
 
   // Initialize form data when editing
@@ -51,6 +65,7 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
         totalCostCents: campToEdit.totalCostCents,
         outOfStateRebateCents: campToEdit.outOfStateRebateCents,
         inStateExtraCostCents: campToEdit.inStateExtraCostCents,
+        lastInstallmentDeadline: timestampToDateString(campToEdit.lastInstallmentDeadline),
       });
     } else {
       // Reset form for create mode
@@ -64,6 +79,7 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
         totalCostCents: 0,
         outOfStateRebateCents: 0,
         inStateExtraCostCents: 0,
+        lastInstallmentDeadline: '',
       });
     }
   }, [mode, campToEdit]);
@@ -81,6 +97,7 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
         totalCostCents: formData.totalCostCents,
         outOfStateRebateCents: formData.outOfStateRebateCents,
         inStateExtraCostCents: formData.inStateExtraCostCents,
+        lastInstallmentDeadline: formData.lastInstallmentDeadline ? dateStringToTimestamp(formData.lastInstallmentDeadline) : Timestamp.now(),
       };
 
       if (mode === 'create') {
@@ -182,6 +199,17 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
               <option value={Currency.USD}>USD</option>
               <option value={Currency.EURO}>EUR</option>
             </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="lastInstallmentDeadline">Last Installment Deadline</label>
+            <input
+              id="lastInstallmentDeadline"
+              type="date"
+              value={formData.lastInstallmentDeadline}
+              onChange={(e) => setFormData({ ...formData, lastInstallmentDeadline: e.target.value })}
+              required
+            />
           </div>
 
           <div className="form-row">

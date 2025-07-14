@@ -6,8 +6,8 @@
     "build": "pnpm --recursive build",
     "lint": "pnpm --recursive lint",
     "test": "pnpm --recursive test",
-    "clean": "pnpm --recursive clean",
-    "deploy": "pnpm --filter functions deploy"
+    "stripe:login": "stripe login --interactive",
+    "stripe:listen": "stripe listen --forward-to http://127.0.0.1:5001/tgbc-camp-tickets/australia-southeast2/handleStripeWebhook"
   },
   "devDependencies": {
     "concurrently": "^9.2.0",

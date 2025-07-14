@@ -104,6 +104,9 @@ export const AdminDashboard: React.FC = () => {
                         <div className="camp-dates">
                           <strong>Created:</strong> {formatDate(camp.createdAt)}
                         </div>
+                        <div className="camp-deadline">
+                          <strong>Last Installment Deadline:</strong> {formatDate(camp.lastInstallmentDeadline)}
+                        </div>
                       </div>
                     </div>
                     <div className="camp-actions">
