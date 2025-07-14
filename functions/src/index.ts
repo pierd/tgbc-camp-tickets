@@ -31,7 +31,7 @@ const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 const STRIPE_WEBHOOK_DEV_SECRET = "whsec_85287fbdf6aaf99ead2a184d0c60fff9130d9eff9c5de3c0ff9be1697e857dbf";
 
-export const joinCamp = onCall<JoinCampRequest>({ cors: true }, async (request) => {
+export const joinCamp = onCall<JoinCampRequest>({ cors: /.*/ }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "User is not authenticated");
   }
@@ -39,7 +39,7 @@ export const joinCamp = onCall<JoinCampRequest>({ cors: true }, async (request) 
   return initiatePayment(request.auth.uid, campId, returnUrl, { isInitialInstallment: true, state });
 });
 
-export const payInstallment = onCall<PayInstallmentRequest>({ cors: true }, async (request) => {
+export const payInstallment = onCall<PayInstallmentRequest>({ cors: /.*/ }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "User is not authenticated");
   }
@@ -132,7 +132,7 @@ async function initiatePayment(userId: string, campId: string, returnUrl: string
   return response;
 }
 
-export const handleStripeWebhook = onRequest(async (request, response) => {
+export const handleStripeWebhook = onRequest({ cors: /.*/ }, async (request, response) => {
   const payload = request.rawBody;
   logger.debug("Stripe webhook received");
   const sig = request.headers["stripe-signature"];
