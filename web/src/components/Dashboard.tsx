@@ -70,8 +70,15 @@ export function Dashboard() {
         type: isSuccess ? "success" : "error",
         message: isSuccess
           ? "Payment processed successfully! Your installment will appear in the system shortly."
-          : "Payment failed. Please try again or contact support if the issue persists.",
+          : "Payment failed or was cancelled. Please try again or contact support if the issue persists.",
       });
+
+      // Remove the success parameter from URL
+      urlParams.delete("success");
+      const newUrl =
+        window.location.pathname +
+        (urlParams.toString() ? `?${urlParams.toString()}` : "");
+      window.history.replaceState({}, "", newUrl);
 
       // Auto-dismiss banner after 5 seconds
       const timer = setTimeout(() => {
