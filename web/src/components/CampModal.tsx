@@ -1,19 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase';
-import { DbCollections, type DbCamp, CampState, Currency, campStateDisplayName } from 'shared';
+import React, { useState, useEffect } from "react";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  doc,
+  Timestamp,
+} from "firebase/firestore";
+import { db } from "../firebase";
+import {
+  DbCollections,
+  type DbCamp,
+  CampState,
+  Currency,
+  campStateDisplayName,
+} from "shared";
 
 interface CampModalProps {
   isOpen: boolean;
   onClose: () => void;
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
   campToEdit?: DbCamp & { id: string };
 }
 
-const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit }) => {
+const CampModal: React.FC<CampModalProps> = ({
+  isOpen,
+  onClose,
+  mode,
+  campToEdit,
+}) => {
   const [formData, setFormData] = useState({
-    name: '',
-    country: 'Australia',
+    name: "",
+    country: "Australia",
     state: CampState.auNSW,
     currency: Currency.AUD,
     initialInstallmentCents: 0,
@@ -21,7 +38,7 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
     totalCostCents: 0,
     outOfStateRebateCents: 0,
     inStateExtraCostCents: 0,
-    lastInstallmentDeadline: '',
+    lastInstallmentDeadline: "",
   });
 
   // Helper function to convert integer dollars to cents
@@ -37,9 +54,9 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
 
   // Helper function to convert Timestamp to date string for input
   const timestampToDateString = (timestamp: any): string => {
-    if (!timestamp) return '';
+    if (!timestamp) return "";
     const date = new Date(timestamp.seconds * 1000);
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
   };
 
   // Helper function to convert date string to Timestamp
@@ -50,8 +67,8 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
 
   // Initialize form data when editing
   useEffect(() => {
-    if (mode === 'edit' && campToEdit) {
-      const country = campToEdit.state.startsWith('au') ? 'Australia' : 'US';
+    if (mode === "edit" && campToEdit) {
+      const country = campToEdit.state.startsWith("au") ? "Australia" : "US";
       setFormData({
         name: campToEdit.name,
         country,
@@ -62,13 +79,15 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
         totalCostCents: campToEdit.totalCostCents,
         outOfStateRebateCents: campToEdit.outOfStateRebateCents,
         inStateExtraCostCents: campToEdit.inStateExtraCostCents,
-        lastInstallmentDeadline: timestampToDateString(campToEdit.lastInstallmentDeadline),
+        lastInstallmentDeadline: timestampToDateString(
+          campToEdit.lastInstallmentDeadline
+        ),
       });
     } else {
       // Reset form for create mode
       setFormData({
-        name: '',
-        country: 'Australia',
+        name: "",
+        country: "Australia",
         state: CampState.auNSW,
         currency: Currency.AUD,
         initialInstallmentCents: 0,
@@ -76,7 +95,7 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
         totalCostCents: 0,
         outOfStateRebateCents: 0,
         inStateExtraCostCents: 0,
-        lastInstallmentDeadline: '',
+        lastInstallmentDeadline: "",
       });
     }
   }, [mode, campToEdit]);
@@ -94,17 +113,19 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
         totalCostCents: formData.totalCostCents,
         outOfStateRebateCents: formData.outOfStateRebateCents,
         inStateExtraCostCents: formData.inStateExtraCostCents,
-        lastInstallmentDeadline: formData.lastInstallmentDeadline ? dateStringToTimestamp(formData.lastInstallmentDeadline) : Timestamp.now(),
+        lastInstallmentDeadline: formData.lastInstallmentDeadline
+          ? dateStringToTimestamp(formData.lastInstallmentDeadline)
+          : Timestamp.now(),
       };
 
-      if (mode === 'create') {
+      if (mode === "create") {
         const now = Timestamp.now();
         await addDoc(collection(db, DbCollections.camps), {
           ...campData,
           createdAt: now,
           updatedAt: now,
         });
-      } else if (mode === 'edit' && campToEdit) {
+      } else if (mode === "edit" && campToEdit) {
         const campRef = doc(db, DbCollections.camps, campToEdit.id);
         await updateDoc(campRef, {
           ...campData,
@@ -114,8 +135,15 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
 
       onClose();
     } catch (error) {
-      console.error(`Error ${mode === 'create' ? 'creating' : 'updating'} camp:`, error);
-      alert(`Failed to ${mode === 'create' ? 'create' : 'update'} camp. Please try again.`);
+      console.error(
+        `Error ${mode === "create" ? "creating" : "updating"} camp:`,
+        error
+      );
+      alert(
+        `Failed to ${
+          mode === "create" ? "create" : "update"
+        } camp. Please try again.`
+      );
     }
   };
 
@@ -125,8 +153,10 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h2>{mode === 'create' ? 'Add New Camp' : 'Edit Camp'}</h2>
-          <button onClick={onClose} className="modal-close">&times;</button>
+          <h2>{mode === "create" ? "Add New Camp" : "Edit Camp"}</h2>
+          <button onClick={onClose} className="modal-close">
+            &times;
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="camp-form">
           <div className="form-group">
@@ -135,7 +165,9 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
               id="name"
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               required
             />
           </div>
@@ -147,12 +179,14 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
               value={formData.country}
               onChange={(e) => {
                 const newCountry = e.target.value;
-                const newState = newCountry === 'Australia' ? CampState.auNSW : CampState.usAK;
+                const newState =
+                  newCountry === "Australia" ? CampState.auNSW : CampState.usAK;
                 setFormData({
                   ...formData,
                   country: newCountry,
                   state: newState,
-                  currency: newCountry === 'Australia' ? Currency.AUD : Currency.USD
+                  currency:
+                    newCountry === "Australia" ? Currency.AUD : Currency.USD,
                 });
               }}
               required
@@ -167,19 +201,23 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
             <select
               id="state"
               value={formData.state}
-              onChange={(e) => setFormData({ ...formData, state: e.target.value as CampState })}
+              onChange={(e) =>
+                setFormData({ ...formData, state: e.target.value as CampState })
+              }
               required
             >
               {Object.entries(campStateDisplayName)
                 .filter(([key]) => {
-                  if (formData.country === 'Australia') {
-                    return key.startsWith('au');
+                  if (formData.country === "Australia") {
+                    return key.startsWith("au");
                   } else {
-                    return key.startsWith('us');
+                    return key.startsWith("us");
                   }
                 })
                 .map(([key, value]) => (
-                  <option key={key} value={key}>{value}</option>
+                  <option key={key} value={key}>
+                    {value}
+                  </option>
                 ))}
             </select>
           </div>
@@ -189,7 +227,12 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
             <select
               id="currency"
               value={formData.currency}
-              onChange={(e) => setFormData({ ...formData, currency: e.target.value as Currency })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  currency: e.target.value as Currency,
+                })
+              }
               required
             >
               <option value={Currency.AUD}>AUD</option>
@@ -199,12 +242,19 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
           </div>
 
           <div className="form-group">
-            <label htmlFor="lastInstallmentDeadline">Last Installment Deadline</label>
+            <label htmlFor="lastInstallmentDeadline">
+              Last Installment Deadline
+            </label>
             <input
               id="lastInstallmentDeadline"
               type="date"
               value={formData.lastInstallmentDeadline}
-              onChange={(e) => setFormData({ ...formData, lastInstallmentDeadline: e.target.value })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  lastInstallmentDeadline: e.target.value,
+                })
+              }
               required
             />
           </div>
@@ -213,13 +263,24 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
             <div className="form-group">
               <label htmlFor="initialInstallment">Initial Installment</label>
               <div className="money-input">
-                <span className="currency-symbol">{formData.currency === Currency.USD ? '$' : formData.currency === Currency.EURO ? '€' : 'A$'}</span>
+                <span className="currency-symbol">
+                  {formData.currency === Currency.USD
+                    ? "$"
+                    : formData.currency === Currency.EURO
+                    ? "€"
+                    : "A$"}
+                </span>
                 <input
                   id="initialInstallment"
                   type="number"
                   min="0"
                   value={centsToDollars(formData.initialInstallmentCents)}
-                  onChange={(e) => setFormData({ ...formData, initialInstallmentCents: dollarsToCents(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      initialInstallmentCents: dollarsToCents(e.target.value),
+                    })
+                  }
                   required
                 />
               </div>
@@ -228,13 +289,24 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
             <div className="form-group">
               <label htmlFor="installmentAmount">Installment Amount</label>
               <div className="money-input">
-                <span className="currency-symbol">{formData.currency === Currency.USD ? '$' : formData.currency === Currency.EURO ? '€' : 'A$'}</span>
+                <span className="currency-symbol">
+                  {formData.currency === Currency.USD
+                    ? "$"
+                    : formData.currency === Currency.EURO
+                    ? "€"
+                    : "A$"}
+                </span>
                 <input
                   id="installmentAmount"
                   type="number"
                   min="0"
                   value={centsToDollars(formData.installmentCents)}
-                  onChange={(e) => setFormData({ ...formData, installmentCents: dollarsToCents(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      installmentCents: dollarsToCents(e.target.value),
+                    })
+                  }
                   required
                 />
               </div>
@@ -244,13 +316,24 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
           <div className="form-group">
             <label htmlFor="totalCost">Total Cost</label>
             <div className="money-input">
-              <span className="currency-symbol">{formData.currency === Currency.USD ? '$' : formData.currency === Currency.EURO ? '€' : 'A$'}</span>
+              <span className="currency-symbol">
+                {formData.currency === Currency.USD
+                  ? "$"
+                  : formData.currency === Currency.EURO
+                  ? "€"
+                  : "A$"}
+              </span>
               <input
                 id="totalCost"
                 type="number"
                 min="0"
                 value={centsToDollars(formData.totalCostCents)}
-                onChange={(e) => setFormData({ ...formData, totalCostCents: dollarsToCents(e.target.value) })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    totalCostCents: dollarsToCents(e.target.value),
+                  })
+                }
                 required
               />
             </div>
@@ -260,13 +343,24 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
             <div className="form-group">
               <label htmlFor="outOfStateRebate">Out of State Rebate</label>
               <div className="money-input">
-                <span className="currency-symbol">{formData.currency === Currency.USD ? '$' : formData.currency === Currency.EURO ? '€' : 'A$'}</span>
+                <span className="currency-symbol">
+                  {formData.currency === Currency.USD
+                    ? "$"
+                    : formData.currency === Currency.EURO
+                    ? "€"
+                    : "A$"}
+                </span>
                 <input
                   id="outOfStateRebate"
                   type="number"
                   min="0"
                   value={centsToDollars(formData.outOfStateRebateCents)}
-                  onChange={(e) => setFormData({ ...formData, outOfStateRebateCents: dollarsToCents(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      outOfStateRebateCents: dollarsToCents(e.target.value),
+                    })
+                  }
                   required
                 />
               </div>
@@ -275,13 +369,24 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
             <div className="form-group">
               <label htmlFor="inStateExtraCost">In State Extra Cost</label>
               <div className="money-input">
-                <span className="currency-symbol">{formData.currency === Currency.USD ? '$' : formData.currency === Currency.EURO ? '€' : 'A$'}</span>
+                <span className="currency-symbol">
+                  {formData.currency === Currency.USD
+                    ? "$"
+                    : formData.currency === Currency.EURO
+                    ? "€"
+                    : "A$"}
+                </span>
                 <input
                   id="inStateExtraCost"
                   type="number"
                   min="0"
                   value={centsToDollars(formData.inStateExtraCostCents)}
-                  onChange={(e) => setFormData({ ...formData, inStateExtraCostCents: dollarsToCents(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      inStateExtraCostCents: dollarsToCents(e.target.value),
+                    })
+                  }
                   required
                 />
               </div>
@@ -293,7 +398,7 @@ const CampModal: React.FC<CampModalProps> = ({ isOpen, onClose, mode, campToEdit
               Cancel
             </button>
             <button type="submit" className="btn-primary">
-              {mode === 'create' ? 'Create Camp' : 'Update Camp'}
+              {mode === "create" ? "Create Camp" : "Update Camp"}
             </button>
           </div>
         </form>

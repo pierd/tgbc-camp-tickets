@@ -8,12 +8,15 @@ interface ParticipantProfileProps {
   userId: string;
 }
 
-export const ParticipantProfile: React.FC<ParticipantProfileProps> = ({ userId }) => {
+export const ParticipantProfile: React.FC<ParticipantProfileProps> = ({
+  userId,
+}) => {
   // Get profile details
-  const profileRef = doc(db, DbCollections.profiles, userId) as DocumentReference<
-    DbProfile,
-    DbProfile
-  >;
+  const profileRef = doc(
+    db,
+    DbCollections.profiles,
+    userId
+  ) as DocumentReference<DbProfile, DbProfile>;
   const profileData = useStreamDocument<DbProfile, DbProfile>(profileRef);
 
   if (profileData.status === "loading") {
@@ -36,7 +39,8 @@ export const ParticipantProfile: React.FC<ParticipantProfileProps> = ({ userId }
           <strong>Name:</strong> {profile.name}
         </div>
         <div className="profile-default-state">
-          <strong>Default State:</strong> {campStateDisplayName[profile.defaultCampState]}
+          <strong>Default State:</strong>{" "}
+          {campStateDisplayName[profile.defaultCampState]}
         </div>
       </div>
     </div>

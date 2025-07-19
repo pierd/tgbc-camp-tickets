@@ -55,22 +55,22 @@ export function Dashboard() {
 
   // Payment result banner state
   const [paymentBanner, setPaymentBanner] = useState<{
-    type: 'success' | 'error';
+    type: "success" | "error";
     message: string;
   } | null>(null);
 
   // Handle URL parameters for payment results
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const success = urlParams.get('success');
+    const success = urlParams.get("success");
 
     if (success !== null) {
-      const isSuccess = success === 'true';
-            setPaymentBanner({
-        type: isSuccess ? 'success' : 'error',
+      const isSuccess = success === "true";
+      setPaymentBanner({
+        type: isSuccess ? "success" : "error",
         message: isSuccess
-          ? 'Payment processed successfully! Your installment will appear in the system shortly.'
-          : 'Payment failed. Please try again or contact support if the issue persists.'
+          ? "Payment processed successfully! Your installment will appear in the system shortly."
+          : "Payment failed. Please try again or contact support if the issue persists.",
       });
 
       // Auto-dismiss banner after 5 seconds
@@ -94,7 +94,8 @@ export function Dashboard() {
   const isProfileIncomplete = !isProfileComplete(profile);
 
   // Show profile modal if profile is incomplete
-  const shouldShowProfileModal = isProfileIncomplete && currentUser && profileData.status !== "loading";
+  const shouldShowProfileModal =
+    isProfileIncomplete && currentUser && profileData.status !== "loading";
 
   console.log("currentUser.uid", currentUser?.uid);
 

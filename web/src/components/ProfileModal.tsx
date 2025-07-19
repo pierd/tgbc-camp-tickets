@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { db } from "../firebase";
-import { DbCollections, type DbProfile, CampState, campStateDisplayName } from "shared";
+import {
+  DbCollections,
+  type DbProfile,
+  CampState,
+  campStateDisplayName,
+} from "shared";
 import { useAuth } from "../contexts/AuthContext";
 
 interface ProfileModalProps {
@@ -9,11 +14,16 @@ interface ProfileModalProps {
   onProfileComplete: () => void;
 }
 
-export default function ProfileModal({ isOpen, onProfileComplete }: ProfileModalProps) {
+export default function ProfileModal({
+  isOpen,
+  onProfileComplete,
+}: ProfileModalProps) {
   const { currentUser } = useAuth();
   const [name, setName] = useState("");
   const [country, setCountry] = useState("Australia");
-  const [defaultCampState, setDefaultCampState] = useState<CampState>(CampState.auNSW);
+  const [defaultCampState, setDefaultCampState] = useState<CampState>(
+    CampState.auNSW
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,14 +49,11 @@ export default function ProfileModal({ isOpen, onProfileComplete }: ProfileModal
         defaultCampState,
       };
 
-      await setDoc(
-        doc(db, DbCollections.profiles, currentUser.uid),
-        {
-          ...profileData,
-          createdAt: Timestamp.now(),
-          updatedAt: Timestamp.now(),
-        }
-      );
+      await setDoc(doc(db, DbCollections.profiles, currentUser.uid), {
+        ...profileData,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
 
       onProfileComplete();
     } catch (err) {
@@ -90,7 +97,8 @@ export default function ProfileModal({ isOpen, onProfileComplete }: ProfileModal
               value={country}
               onChange={(e) => {
                 const newCountry = e.target.value;
-                const newState = newCountry === "Australia" ? CampState.auNSW : CampState.usAK;
+                const newState =
+                  newCountry === "Australia" ? CampState.auNSW : CampState.usAK;
                 setCountry(newCountry);
                 setDefaultCampState(newState);
               }}

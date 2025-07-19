@@ -1,18 +1,33 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router-dom';
-import { useIsAdmin, useFirebaseQuery, queryT, orderByT, useStreamDocumentById } from '../firebaseHooks';
-import { collection } from 'firebase/firestore';
-import { db } from '../firebase';
-import { DbCollections, type DbCamp, CampState, Currency, campStateDisplayName, type DbProfile } from 'shared';
-import CampModal from './CampModal';
+import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { Link } from "react-router-dom";
+import {
+  useIsAdmin,
+  useFirebaseQuery,
+  queryT,
+  orderByT,
+  useStreamDocumentById,
+} from "../firebaseHooks";
+import { collection } from "firebase/firestore";
+import { db } from "../firebase";
+import {
+  DbCollections,
+  type DbCamp,
+  CampState,
+  Currency,
+  campStateDisplayName,
+  type DbProfile,
+} from "shared";
+import CampModal from "./CampModal";
 
 export const AdminDashboard: React.FC = () => {
   const { currentUser } = useAuth();
   const isAdmin = useIsAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [campToEdit, setCampToEdit] = useState<(DbCamp & { id: string }) | undefined>();
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [campToEdit, setCampToEdit] = useState<
+    (DbCamp & { id: string }) | undefined
+  >();
 
   // Fetch user profile
   const profileData = useStreamDocumentById(
@@ -23,30 +38,30 @@ export const AdminDashboard: React.FC = () => {
 
   // Get camps from Firebase
   const campsRef = collection(db, DbCollections.camps);
-  const campsQuery = queryT(campsRef, orderByT('createdAt', 'desc'));
+  const campsQuery = queryT(campsRef, orderByT("createdAt", "desc"));
   const camps = useFirebaseQuery(campsQuery);
 
   const formatCurrency = (cents: number, currency: Currency) => {
     const dollars = cents / 100;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
       currency: currency.toUpperCase(),
     }).format(dollars);
   };
 
   const formatDate = (timestamp: any) => {
-    if (!timestamp) return 'N/A';
+    if (!timestamp) return "N/A";
     return new Date(timestamp.seconds * 1000).toLocaleDateString();
   };
 
   const handleOpenCreateModal = () => {
-    setModalMode('create');
+    setModalMode("create");
     setCampToEdit(undefined);
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (camp: DbCamp & { id: string }) => {
-    setModalMode('edit');
+    setModalMode("edit");
     setCampToEdit(camp);
     setIsModalOpen(true);
   };
@@ -69,7 +84,9 @@ export const AdminDashboard: React.FC = () => {
             <p>Welcome, {profile?.name || currentUser?.email}</p>
           </div>
           <div className="admin-nav">
-            <Link to="/" className="nav-link">Dashboard</Link>
+            <Link to="/" className="nav-link">
+              Dashboard
+            </Link>
           </div>
         </div>
       </header>
@@ -89,7 +106,10 @@ export const AdminDashboard: React.FC = () => {
           <div className="camps-list">
             {camps.length === 0 ? (
               <div className="no-camps">
-                <p>No camps have been created yet. Create your first camp to get started.</p>
+                <p>
+                  No camps have been created yet. Create your first camp to get
+                  started.
+                </p>
               </div>
             ) : (
               camps.map((campDoc) => {
@@ -100,19 +120,24 @@ export const AdminDashboard: React.FC = () => {
                       <h3 className="camp-name">{camp.name}</h3>
                       <div className="camp-details">
                         <div className="camp-location">
-                          <strong>Location:</strong> {campStateDisplayName[camp.state as CampState] || camp.state}
+                          <strong>Location:</strong>{" "}
+                          {campStateDisplayName[camp.state as CampState] ||
+                            camp.state}
                         </div>
                         <div className="camp-currency">
-                          <strong>Currency:</strong> {camp.currency.toUpperCase()}
+                          <strong>Currency:</strong>{" "}
+                          {camp.currency.toUpperCase()}
                         </div>
                         <div className="camp-pricing">
-                          <strong>Total Cost:</strong> {formatCurrency(camp.totalCostCents, camp.currency)}
+                          <strong>Total Cost:</strong>{" "}
+                          {formatCurrency(camp.totalCostCents, camp.currency)}
                         </div>
                         <div className="camp-dates">
                           <strong>Created:</strong> {formatDate(camp.createdAt)}
                         </div>
                         <div className="camp-deadline">
-                          <strong>Last Installment Deadline:</strong> {formatDate(camp.lastInstallmentDeadline)}
+                          <strong>Last Installment Deadline:</strong>{" "}
+                          {formatDate(camp.lastInstallmentDeadline)}
                         </div>
                       </div>
                     </div>
@@ -124,7 +149,12 @@ export const AdminDashboard: React.FC = () => {
                         View Details
                       </Link>
                       <button
-                        onClick={() => handleOpenEditModal({ ...camp, id: campDoc.id } as DbCamp & { id: string })}
+                        onClick={() =>
+                          handleOpenEditModal({
+                            ...camp,
+                            id: campDoc.id,
+                          } as DbCamp & { id: string })
+                        }
                         className="btn-primary edit-camp-btn"
                       >
                         Edit

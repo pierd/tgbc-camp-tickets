@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 interface AuthFormProps {
-  mode: 'login' | 'register';
+  mode: "login" | "register";
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp, signInWithGoogle } = useAuth();
 
@@ -16,21 +16,21 @@ export function AuthForm({ mode }: AuthFormProps) {
     e.preventDefault();
 
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
 
     try {
-      setError('');
+      setError("");
       setLoading(true);
 
-      if (mode === 'login') {
+      if (mode === "login") {
         await signIn(email, password);
       } else {
         await signUp(email, password);
       }
     } catch (error: any) {
-      setError(error.message || 'Failed to ' + mode);
+      setError(error.message || "Failed to " + mode);
     } finally {
       setLoading(false);
     }
@@ -38,11 +38,11 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   async function handleGoogleSignIn() {
     try {
-      setError('');
+      setError("");
       setLoading(true);
       await signInWithGoogle();
     } catch (error: any) {
-      setError(error.message || 'Failed to sign in with Google');
+      setError(error.message || "Failed to sign in with Google");
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   return (
     <div className="auth-form">
-      <h2>{mode === 'login' ? 'Sign In' : 'Sign Up'}</h2>
+      <h2>{mode === "login" ? "Sign In" : "Sign Up"}</h2>
 
       {error && <div className="error">{error}</div>}
 
@@ -78,7 +78,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         </div>
 
         <button type="submit" disabled={loading}>
-          {loading ? 'Loading...' : (mode === 'login' ? 'Sign In' : 'Sign Up')}
+          {loading ? "Loading..." : mode === "login" ? "Sign In" : "Sign Up"}
         </button>
       </form>
 
@@ -92,7 +92,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         disabled={loading}
         className="google-btn"
       >
-        {loading ? 'Loading...' : 'Continue with Google'}
+        {loading ? "Loading..." : "Continue with Google"}
       </button>
     </div>
   );

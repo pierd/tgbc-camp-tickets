@@ -1,14 +1,14 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
   signOut,
   onAuthStateChanged,
-  GoogleAuthProvider
-} from 'firebase/auth';
-import type { User } from 'firebase/auth';
-import { auth } from '../firebase';
+  GoogleAuthProvider,
+} from "firebase/auth";
+import type { User } from "firebase/auth";
+import { auth } from "../firebase";
 
 interface AuthContextType {
   currentUser: User | null;
@@ -24,7 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signIn,
     signUp,
     signInWithGoogle,
-    logout
+    logout,
   };
 
   return (

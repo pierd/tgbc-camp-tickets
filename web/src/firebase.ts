@@ -1,9 +1,9 @@
-import { initializeApp } from 'firebase/app';
-import { connectAuthEmulator, getAuth } from 'firebase/auth';
-import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
-import { isDev } from './devUtils';
-import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
-import { getAnalytics } from 'firebase/analytics';
+import { initializeApp } from "firebase/app";
+import { connectAuthEmulator, getAuth } from "firebase/auth";
+import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+import { isDev } from "./devUtils";
+import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAXfzNwNECmVKQrIhp9yhaF_IuVXMBfajA",
@@ -11,7 +11,7 @@ const firebaseConfig = {
   projectId: "tgbc-camp-tickets",
   storageBucket: "tgbc-camp-tickets.firebasestorage.app",
   messagingSenderId: "785909138910",
-  appId: "1:785909138910:web:44e24e3074c9c22a8b094f"
+  appId: "1:785909138910:web:44e24e3074c9c22a8b094f",
 };
 
 export const app = initializeApp(firebaseConfig);

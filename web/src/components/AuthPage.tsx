@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { AuthForm } from './AuthForm';
+import { useState } from "react";
+import { AuthForm } from "./AuthForm";
 
 export function AuthPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<"login" | "register">("login");
 
   return (
     <div className="auth-page">
@@ -13,12 +13,12 @@ export function AuthPage() {
         <AuthForm mode={mode} />
 
         <div className="auth-switch">
-          {mode === 'login' ? (
+          {mode === "login" ? (
             <p>
-              Don't have an account?{' '}
+              Don't have an account?{" "}
               <button
                 type="button"
-                onClick={() => setMode('register')}
+                onClick={() => setMode("register")}
                 className="link-btn"
               >
                 Sign up
@@ -26,10 +26,10 @@ export function AuthPage() {
             </p>
           ) : (
             <p>
-              Already have an account?{' '}
+              Already have an account?{" "}
               <button
                 type="button"
-                onClick={() => setMode('login')}
+                onClick={() => setMode("login")}
                 className="link-btn"
               >
                 Sign in

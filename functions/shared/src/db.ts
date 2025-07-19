@@ -53,8 +53,16 @@ export type DbCamp = {
   inStateExtraCostCents: number;
 };
 
-export function calculateParticipantCostCents(campData: DbCamp, participantState: CampState) {
-  return campData.totalCostCents + (campData.state === participantState ? campData.inStateExtraCostCents : -campData.outOfStateRebateCents);
+export function calculateParticipantCostCents(
+  campData: DbCamp,
+  participantState: CampState
+) {
+  return (
+    campData.totalCostCents +
+    (campData.state === participantState
+      ? campData.inStateExtraCostCents
+      : -campData.outOfStateRebateCents)
+  );
 }
 
 // keyed by `userId-campId`
@@ -67,7 +75,13 @@ export type DbCampParticipant = {
   paidCents: number;
 };
 
-export function getCampParticipantId({ userId, campId }: { userId: UserId; campId: CampId }) {
+export function getCampParticipantId({
+  userId,
+  campId,
+}: {
+  userId: UserId;
+  campId: CampId;
+}) {
   return `${userId}-${campId}`;
 }
 
@@ -89,10 +103,11 @@ export type DbStripeCheckoutSession = {
   paymentIntents: string[];
   cents: number;
 } & (
-  {
-    isInitialInstallment: true;
-    participantState: CampState;
-  } | {
-    isInitialInstallment: false;
-  }
+  | {
+      isInitialInstallment: true;
+      participantState: CampState;
+    }
+  | {
+      isInitialInstallment: false;
+    }
 );

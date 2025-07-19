@@ -19,7 +19,12 @@ import {
 } from "firebase/firestore";
 import _ from "lodash";
 import { useAuth } from "./contexts/AuthContext";
-import { DbCollections, type DbCampParticipant, type DbCampParticipantInstallment, type DbStripeCheckoutSession } from "shared";
+import {
+  DbCollections,
+  type DbCampParticipant,
+  type DbCampParticipantInstallment,
+  type DbStripeCheckoutSession,
+} from "shared";
 import { db } from "./firebase";
 
 export type Loadable<T, ErrorExtra = object> =
@@ -29,7 +34,7 @@ export type Loadable<T, ErrorExtra = object> =
 
 export interface QueryConstraintT<
   AppModelType,
-  DbModelType extends DocumentData,
+  DbModelType extends DocumentData
 > extends QueryConstraint {
   // Phantom fields to preserve type parameters
   readonly __appModelType?: AppModelType;
@@ -56,7 +61,7 @@ export function queryT<AppModelType, DbModelType extends DocumentData>(
 export function whereT<
   AppModelType,
   DbModelType extends DocumentData,
-  K extends keyof AppModelType,
+  K extends keyof AppModelType
 >(
   fieldPath: K,
   opStr: "in",
@@ -66,7 +71,7 @@ export function whereT<
 export function whereT<
   AppModelType,
   DbModelType extends DocumentData,
-  K extends keyof AppModelType,
+  K extends keyof AppModelType
 >(
   fieldPath: K,
   opStr: WhereFilterOp,
@@ -76,7 +81,7 @@ export function whereT<
 export function whereT<
   AppModelType,
   DbModelType extends DocumentData,
-  K extends keyof AppModelType,
+  K extends keyof AppModelType
 >(
   fieldPath: K,
   opStr: WhereFilterOp,
@@ -90,7 +95,7 @@ export function whereT<
 export function orderByT<
   AppModelType,
   DbModelType extends DocumentData,
-  K extends keyof AppModelType,
+  K extends keyof AppModelType
 >(
   fieldPath: K,
   directionStr?: OrderByDirection
@@ -101,7 +106,7 @@ export function orderByT<
 
 export function useFirebaseQuery<
   AppModelType,
-  DbModelType extends DocumentData,
+  DbModelType extends DocumentData
 >(query: Query<AppModelType, DbModelType> | undefined) {
   const currentQuery = useFirebaseQueryDedup(query);
   return useFirebaseQuerySnapshotUnsafe(currentQuery);
@@ -109,7 +114,7 @@ export function useFirebaseQuery<
 
 export function useFirebaseQueryDedup<
   AppModelType,
-  DbModelType extends DocumentData,
+  DbModelType extends DocumentData
 >(
   query: Query<AppModelType, DbModelType> | undefined
 ): Query<AppModelType, DbModelType> | undefined {
@@ -130,7 +135,7 @@ export function useFirebaseQueryDedup<
 /** WARNING: This must be used together with useFirebaseQueryDedup. If unsure, use useFirebaseQuery */
 export function useFirebaseQuerySnapshotUnsafe<
   AppModelType,
-  DbModelType extends DocumentData,
+  DbModelType extends DocumentData
 >(query: Query<AppModelType, DbModelType> | undefined) {
   const [docs, setDocs] = useState<
     QueryDocumentSnapshot<AppModelType, DbModelType>[]
@@ -174,7 +179,7 @@ export type DocumentError = {
 
 export function useStreamDocumentTo<
   AppModelType,
-  DbModelType extends DocumentData,
+  DbModelType extends DocumentData
 >(
   docRef: DocumentReference<AppModelType, DbModelType> | undefined,
 
@@ -232,7 +237,7 @@ export function useStreamDocumentTo<
 
 export function useDocumentRefDedup<
   AppModelType,
-  DbModelType extends DocumentData,
+  DbModelType extends DocumentData
 >(ref: DocumentReference<AppModelType, DbModelType> | undefined) {
   const currentRef = useRef(ref);
   if (currentRef.current?.path !== ref?.path) {
@@ -243,7 +248,7 @@ export function useDocumentRefDedup<
 
 export function useStreamDocument<
   AppModelType,
-  DbModelType extends DocumentData,
+  DbModelType extends DocumentData
 >(
   doc: DocumentReference<AppModelType, DbModelType> | undefined
 ): Loadable<DocumentSnapshot<AppModelType, DbModelType>, DocumentError> {
@@ -269,7 +274,7 @@ export function useStreamDocument<
 
 export function useStreamDocumentById<
   AppModelType,
-  DbModelType extends DocumentData,
+  DbModelType extends DocumentData
 >(
   collection: CollectionReference<AppModelType, DbModelType> | undefined,
 
@@ -287,18 +292,33 @@ export function useStreamDocumentById<
 
 export function useIsAdmin() {
   const { currentUser } = useAuth();
-  return useStreamDocumentById(
-    collection(db, DbCollections.permissions),
-    currentUser?.uid
-  ).value?.data()?.isAdmin ?? false;
+  return (
+    useStreamDocumentById(
+      collection(db, DbCollections.permissions),
+      currentUser?.uid
+    ).value?.data()?.isAdmin ?? false
+  );
 }
 
 // Hook to fetch installments and stripe checkout sessions for multiple participants
-export function useParticipantInstallments(participants: QueryDocumentSnapshot<DbCampParticipant, DbCampParticipant>[]) {
-  const [installmentsData, setInstallmentsData] = useState<Map<string, {
-    installments: QueryDocumentSnapshot<DbCampParticipantInstallment, DbCampParticipantInstallment>[];
-    stripeSessions: QueryDocumentSnapshot<DbStripeCheckoutSession, DbStripeCheckoutSession>[];
-  }>>(new Map());
+export function useParticipantInstallments(
+  participants: QueryDocumentSnapshot<DbCampParticipant, DbCampParticipant>[]
+) {
+  const [installmentsData, setInstallmentsData] = useState<
+    Map<
+      string,
+      {
+        installments: QueryDocumentSnapshot<
+          DbCampParticipantInstallment,
+          DbCampParticipantInstallment
+        >[];
+        stripeSessions: QueryDocumentSnapshot<
+          DbStripeCheckoutSession,
+          DbStripeCheckoutSession
+        >[];
+      }
+    >
+  >(new Map());
 
   useEffect(() => {
     if (participants.length === 0) {
@@ -307,49 +327,96 @@ export function useParticipantInstallments(participants: QueryDocumentSnapshot<D
     }
 
     const unsubscribes: (() => void)[] = [];
-    const newInstallmentsData = new Map<string, {
-      installments: QueryDocumentSnapshot<DbCampParticipantInstallment, DbCampParticipantInstallment>[];
-      stripeSessions: QueryDocumentSnapshot<DbStripeCheckoutSession, DbStripeCheckoutSession>[];
-    }>();
+    const newInstallmentsData = new Map<
+      string,
+      {
+        installments: QueryDocumentSnapshot<
+          DbCampParticipantInstallment,
+          DbCampParticipantInstallment
+        >[];
+        stripeSessions: QueryDocumentSnapshot<
+          DbStripeCheckoutSession,
+          DbStripeCheckoutSession
+        >[];
+      }
+    >();
 
-    participants.forEach(participantDoc => {
+    participants.forEach((participantDoc) => {
       const participantId = participantDoc.id;
-      newInstallmentsData.set(participantId, { installments: [], stripeSessions: [] });
+      newInstallmentsData.set(participantId, {
+        installments: [],
+        stripeSessions: [],
+      });
 
       // Subscribe to installments subcollection
-      const installmentsRef = collection(db, DbCollections.campParticipants, participantId, DbCollections.installments);
-      const installmentsQuery = queryT(installmentsRef, orderByT('createdAt', 'desc'));
-      const installmentsUnsubscribe = onSnapshot(installmentsQuery, (snapshot) => {
-        setInstallmentsData(prev => {
-          const updated = new Map(prev);
-          const current = updated.get(participantId) || { installments: [], stripeSessions: [] };
-          updated.set(participantId, { ...current, installments: snapshot.docs as QueryDocumentSnapshot<DbCampParticipantInstallment, DbCampParticipantInstallment>[] });
-          return updated;
-        });
-      });
+      const installmentsRef = collection(
+        db,
+        DbCollections.campParticipants,
+        participantId,
+        DbCollections.installments
+      );
+      const installmentsQuery = queryT(
+        installmentsRef,
+        orderByT("createdAt", "desc")
+      );
+      const installmentsUnsubscribe = onSnapshot(
+        installmentsQuery,
+        (snapshot) => {
+          setInstallmentsData((prev) => {
+            const updated = new Map(prev);
+            const current = updated.get(participantId) || {
+              installments: [],
+              stripeSessions: [],
+            };
+            updated.set(participantId, {
+              ...current,
+              installments: snapshot.docs as QueryDocumentSnapshot<
+                DbCampParticipantInstallment,
+                DbCampParticipantInstallment
+              >[],
+            });
+            return updated;
+          });
+        }
+      );
       unsubscribes.push(installmentsUnsubscribe);
 
       // Subscribe to stripe checkout sessions for this participant
-      const stripeSessionsRef = collection(db, DbCollections.stripeCheckoutSessions);
+      const stripeSessionsRef = collection(
+        db,
+        DbCollections.stripeCheckoutSessions
+      );
       const stripeSessionsQuery = queryT(
         stripeSessionsRef,
-        whereT('userId', '==', participantDoc.data().userId),
-        whereT('campId', '==', participantDoc.data().campId),
-        orderByT('createdAt', 'desc')
+        whereT("userId", "==", participantDoc.data().userId),
+        whereT("campId", "==", participantDoc.data().campId),
+        orderByT("createdAt", "desc")
       );
-      const stripeSessionsUnsubscribe = onSnapshot(stripeSessionsQuery, (snapshot) => {
-        setInstallmentsData(prev => {
-          const updated = new Map(prev);
-          const current = updated.get(participantId) || { installments: [], stripeSessions: [] };
-          updated.set(participantId, { ...current, stripeSessions: snapshot.docs as QueryDocumentSnapshot<DbStripeCheckoutSession, DbStripeCheckoutSession>[] });
-          return updated;
-        });
-      });
+      const stripeSessionsUnsubscribe = onSnapshot(
+        stripeSessionsQuery,
+        (snapshot) => {
+          setInstallmentsData((prev) => {
+            const updated = new Map(prev);
+            const current = updated.get(participantId) || {
+              installments: [],
+              stripeSessions: [],
+            };
+            updated.set(participantId, {
+              ...current,
+              stripeSessions: snapshot.docs as QueryDocumentSnapshot<
+                DbStripeCheckoutSession,
+                DbStripeCheckoutSession
+              >[],
+            });
+            return updated;
+          });
+        }
+      );
       unsubscribes.push(stripeSessionsUnsubscribe);
     });
 
     return () => {
-      unsubscribes.forEach(unsubscribe => unsubscribe());
+      unsubscribes.forEach((unsubscribe) => unsubscribe());
     };
   }, [participants]);
 

@@ -1,10 +1,15 @@
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { AuthPage } from './components/AuthPage';
-import { Dashboard } from './components/Dashboard';
-import { AdminDashboard } from './components/AdminDashboard';
-import { AdminCampDetails } from './components/AdminCampDetails';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import './App.css';
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AuthPage } from "./components/AuthPage";
+import { Dashboard } from "./components/Dashboard";
+import { AdminDashboard } from "./components/AdminDashboard";
+import { AdminCampDetails } from "./components/AdminCampDetails";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import "./App.css";
 
 function AppContent() {
   const { currentUser } = useAuth();

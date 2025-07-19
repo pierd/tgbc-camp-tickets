@@ -9,7 +9,12 @@ import {
   DocumentReference,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { calculateParticipantCostCents, DbCollections, type DbCamp, type DbCampParticipant } from "shared";
+import {
+  calculateParticipantCostCents,
+  DbCollections,
+  type DbCamp,
+  type DbCampParticipant,
+} from "shared";
 import {
   useStreamDocument,
   useFirebaseQuery,
@@ -184,9 +189,9 @@ export const AdminCampDetails: React.FC = () => {
                         <strong>Paid:</strong>{" "}
                         {formatCurrency(participant.paidCents)}
                         {participant.paidCents ===
-                          calculateParticipantCostCents(camp, participant.state)
-                            ? " (Fully Paid)"
-                            : ""}
+                        calculateParticipantCostCents(camp, participant.state)
+                          ? " (Fully Paid)"
+                          : ""}
                       </div>
                     </div>
                   </div>
