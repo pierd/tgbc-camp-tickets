@@ -9,13 +9,12 @@ import {
   useParticipantInstallments,
   useStreamDocumentById,
 } from "../firebaseHooks";
-import { collection, doc } from "firebase/firestore";
+import { collection } from "firebase/firestore";
 import { db } from "../firebase";
 import {
   DbCollections,
   type DbCamp,
   type DbCampParticipant,
-  type DbCampParticipantInstallment,
   type DbStripeCheckoutSession,
   type DbProfile,
   CampState,
@@ -27,7 +26,7 @@ import {
   calculateParticipantCostCents,
   isProfileComplete,
 } from "shared";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../firebase";
 import JoinCampModal from "./JoinCampModal";
@@ -52,7 +51,37 @@ export function Dashboard() {
   const [paymentModalCamp, setPaymentModalCamp] = useState<
     (DbCamp & { id: string }) | null
   >(null);
-  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [, setShowProfileModal] = useState(false);
+
+  // Payment result banner state
+  const [paymentBanner, setPaymentBanner] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  // Handle URL parameters for payment results
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+
+    if (success !== null) {
+      const isSuccess = success === 'true';
+            setPaymentBanner({
+        type: isSuccess ? 'success' : 'error',
+        message: isSuccess
+          ? 'Payment processed successfully! Your installment will appear in the system shortly.'
+          : 'Payment failed. Please try again or contact support if the issue persists.'
+      });
+
+      // Auto-dismiss banner after 5 seconds
+      const timer = setTimeout(() => {
+        setPaymentBanner(null);
+      }, 5000);
+
+      // Clean up timer on unmount
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // Fetch user profile
   const profileData = useStreamDocumentById(
@@ -188,6 +217,7 @@ export function Dashboard() {
       amount: number;
       status: string;
       title: string;
+      date: string;
     }> = [];
     const processedSessionIds = new Set<string>();
 
@@ -216,11 +246,16 @@ export function Dashboard() {
               camp.currency
             )} - ${status}`;
 
+        // Use paidAt date if available, otherwise use createdAt
+        const dateToShow = session.paidAt || session.createdAt;
+        const date = formatDate(dateToShow);
+
         installmentBoxes.push({
           key: sessionId,
           amount: session.cents,
           status,
           title,
+          date,
         });
 
         processedSessionIds.add(sessionId);
@@ -244,6 +279,7 @@ export function Dashboard() {
               <div className="installment-amount">
                 {formatCurrency(box.amount, camp.currency)}
               </div>
+              <div className="installment-date">{box.date}</div>
               <div className="installment-status">{box.status}</div>
             </div>
           ))}
@@ -409,6 +445,22 @@ export function Dashboard() {
           </button>
         </div>
       </header>
+
+      {/* Payment result banner */}
+      {paymentBanner && (
+        <div className={`payment-banner ${paymentBanner.type}`}>
+          <div className="banner-content">
+            <span className="banner-message">{paymentBanner.message}</span>
+            <button
+              className="banner-close-btn"
+              onClick={() => setPaymentBanner(null)}
+              aria-label="Close banner"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       <main className="dashboard-content">
         {/* Camps the user participates in */}

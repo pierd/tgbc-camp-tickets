@@ -1315,3 +1315,73 @@
     font-size: 1.3rem;
   }
 }
+
+/* Payment Banner Styles */
+.payment-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 1rem 2rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+.payment-banner.success {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+}
+
+.payment-banner.error {
+  background: linear-gradient(135deg, #dc3545, #e74c3c);
+  color: white;
+}
+
+.banner-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.banner-message {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.banner-close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.banner-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Adjust dashboard content when banner is shown */
+.dashboard:has(.payment-banner) .dashboard-content {
+  padding-top: calc(2rem + 80px);
+}
