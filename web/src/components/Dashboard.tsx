@@ -1,9 +1,9 @@
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { useIsAdmin, useFirebaseQuery, queryT, orderByT, whereT } from '../firebaseHooks';
-import { collection } from 'firebase/firestore';
+import { useIsAdmin, useFirebaseQuery, queryT, orderByT, whereT, useParticipantInstallments } from '../firebaseHooks';
+import { collection, doc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { DbCollections, type DbCamp, type DbCampParticipant, CampState, Currency, campStateDisplayName, JoinCampRequest, PayInstallmentRequest, PaymentResponse, calculateParticipantCostCents } from 'shared';
+import { DbCollections, type DbCamp, type DbCampParticipant, type DbCampParticipantInstallment, type DbStripeCheckoutSession, CampState, Currency, campStateDisplayName, JoinCampRequest, PayInstallmentRequest, PaymentResponse, calculateParticipantCostCents } from 'shared';
 import { useMemo, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
@@ -34,6 +34,9 @@ export function Dashboard() {
     orderByT('createdAt', 'desc')
   );
   const participants = useFirebaseQuery(participantsQuery);
+
+  // Fetch installments and stripe sessions for each participant
+  const installmentsData = useParticipantInstallments(participants as any);
 
   // Categorize camps
   const categorizedCamps = useMemo(() => {
@@ -101,6 +104,85 @@ export function Dashboard() {
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'N/A';
     return new Date(timestamp.seconds * 1000).toLocaleDateString();
+  };
+
+    const renderInstallmentBoxes = (camp: DbCamp & { id: string }, userParticipation: DbCampParticipant | undefined) => {
+    if (!userParticipation) return null;
+
+    const participantId = `${userParticipation.userId}-${userParticipation.campId}`;
+    const participantData = installmentsData.get(participantId);
+
+    if (!participantData) return null;
+
+    const { installments, stripeSessions } = participantData;
+
+    // Create a map of stripe sessions by session ID for quick lookup
+    const sessionsMap = new Map<string, DbStripeCheckoutSession>();
+    stripeSessions.forEach(sessionDoc => {
+      const session = sessionDoc.data();
+      sessionsMap.set(session.sessionId, session);
+    });
+
+        // Only show boxes for installments that actually exist
+    const installmentBoxes: Array<{
+      key: string;
+      amount: number;
+      status: string;
+      title: string;
+    }> = [];
+    const processedSessionIds = new Set<string>();
+
+    // Process all stripe sessions and their corresponding installments
+    stripeSessions.forEach(sessionDoc => {
+      const session = sessionDoc.data();
+      const sessionId = session.sessionId;
+
+      // Skip if we've already processed this session
+      if (processedSessionIds.has(sessionId)) return;
+
+      // Find the corresponding installment document
+      const installmentDoc = installments.find(doc =>
+        doc.data().stripeCheckoutSessionId === sessionId
+      );
+
+      if (installmentDoc || session.isInitialInstallment) {
+        const status = session.status === 'succeeded' ? 'paid' : session.status;
+        const title = session.isInitialInstallment
+          ? `Initial Installment: ${formatCurrency(session.cents, camp.currency)} - ${status}`
+          : `Installment: ${formatCurrency(session.cents, camp.currency)} - ${status}`;
+
+        installmentBoxes.push({
+          key: sessionId,
+          amount: session.cents,
+          status,
+          title
+        });
+
+        processedSessionIds.add(sessionId);
+      }
+    });
+
+    if (installmentBoxes.length === 0) return null;
+
+    return (
+      <div className="installment-boxes">
+        <div className="installment-boxes-header">
+          <strong>Installments:</strong>
+        </div>
+        <div className="installment-boxes-grid">
+          {installmentBoxes.map((box) => (
+            <div
+              key={box.key}
+              className={`installment-box ${box.status}`}
+              title={box.title}
+            >
+              <div className="installment-amount">{formatCurrency(box.amount, camp.currency)}</div>
+              <div className="installment-status">{box.status}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   const handleLogout = async () => {
@@ -174,13 +256,6 @@ export function Dashboard() {
                 <span className="deadline-passed-text">⏰ Deadline passed</span>
               )}
             </div>
-            {userParticipation && (
-              <div className="participation-info">
-                <strong>Your State:</strong> {campStateDisplayName[userParticipation.state as CampState]}
-                <br />
-                <strong>Paid:</strong> {formatCurrency(userParticipation.paidCents, camp.currency)}
-              </div>
-            )}
           </div>
         </div>
         <div className="camp-actions">
@@ -192,19 +267,25 @@ export function Dashboard() {
               Join Camp
             </button>
           )}
-          {type === 'participating' && (
+          {type === 'participating' && !isFullyPaid && (
             <>
-              <Link to={`/camp/${camp.id}`} className="btn-secondary view-details-btn">
-                View Details
-              </Link>
-              {!isFullyPaid && (
-                <button
-                  className="btn-primary pay-btn"
-                  onClick={() => setPaymentModalCamp(camp)}
-                >
-                  Pay
-                </button>
+              {userParticipation && (
+                <div className="participation-details">
+                  <div className="payment-summary">
+                    <strong>Paid:</strong> {formatCurrency(userParticipation.paidCents, camp.currency)}
+                  </div>
+                  {renderInstallmentBoxes(camp, userParticipation)}
+                  <div className="remaining-payment">
+                    <strong>Remaining:</strong> {formatCurrency(calculateParticipantCostCents(camp, userParticipation.state) - userParticipation.paidCents, camp.currency)}
+                  </div>
+                </div>
               )}
+              <button
+                className="btn-primary pay-btn"
+                onClick={() => setPaymentModalCamp(camp)}
+              >
+                Pay Installment
+              </button>
             </>
           )}
         </div>
@@ -227,46 +308,34 @@ export function Dashboard() {
 
       <main className="dashboard-content">
         {/* Camps the user participates in */}
-        <section className="camp-section">
-          <h2>Camps You're Participating In ({categorizedCamps.participating.length})</h2>
-          {categorizedCamps.participating.length === 0 ? (
-            <div className="no-camps">
-              <p>You're not participating in any camps yet.</p>
-            </div>
-          ) : (
+        {categorizedCamps.participating.length > 0 && (
+          <section className="camp-section">
+            <h2>Camps You're Participating In ({categorizedCamps.participating.length})</h2>
             <div className="camps-grid">
               {categorizedCamps.participating.map(camp => renderCampCard(camp, 'participating'))}
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* Camps available to join */}
-        <section className="camp-section">
-          <h2>Camps Available to Join ({categorizedCamps.available.length})</h2>
-          {categorizedCamps.available.length === 0 ? (
-            <div className="no-camps">
-              <p>No camps are currently available to join.</p>
-            </div>
-          ) : (
+        {categorizedCamps.available.length > 0 && (
+          <section className="camp-section">
+            <h2>Camps Available to Join ({categorizedCamps.available.length})</h2>
             <div className="camps-grid">
               {categorizedCamps.available.map(camp => renderCampCard(camp, 'available'))}
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* Past camps */}
-        <section className="camp-section">
-          <h2>Past Camps ({categorizedCamps.past.length})</h2>
-          {categorizedCamps.past.length === 0 ? (
-            <div className="no-camps">
-              <p>You haven't participated in any past camps.</p>
-            </div>
-          ) : (
+        {categorizedCamps.past.length > 0 && (
+          <section className="camp-section">
+            <h2>Past Camps ({categorizedCamps.past.length})</h2>
             <div className="camps-grid">
               {categorizedCamps.past.map(camp => renderCampCard(camp, 'past'))}
             </div>
-          )}
-        </section>
+          </section>
+        )}
       </main>
 
       {joinModalCamp && (

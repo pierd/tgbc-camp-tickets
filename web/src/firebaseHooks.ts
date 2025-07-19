@@ -19,7 +19,7 @@ import {
 } from "firebase/firestore";
 import _ from "lodash";
 import { useAuth } from "./contexts/AuthContext";
-import { DbCollections } from "shared";
+import { DbCollections, type DbCampParticipant, type DbCampParticipantInstallment, type DbStripeCheckoutSession } from "shared";
 import { db } from "./firebase";
 
 export type Loadable<T, ErrorExtra = object> =
@@ -291,4 +291,67 @@ export function useIsAdmin() {
     collection(db, DbCollections.permissions),
     currentUser?.uid
   ).value?.data()?.isAdmin ?? false;
+}
+
+// Hook to fetch installments and stripe checkout sessions for multiple participants
+export function useParticipantInstallments(participants: QueryDocumentSnapshot<DbCampParticipant, DbCampParticipant>[]) {
+  const [installmentsData, setInstallmentsData] = useState<Map<string, {
+    installments: QueryDocumentSnapshot<DbCampParticipantInstallment, DbCampParticipantInstallment>[];
+    stripeSessions: QueryDocumentSnapshot<DbStripeCheckoutSession, DbStripeCheckoutSession>[];
+  }>>(new Map());
+
+  useEffect(() => {
+    if (participants.length === 0) {
+      setInstallmentsData(new Map());
+      return;
+    }
+
+    const unsubscribes: (() => void)[] = [];
+    const newInstallmentsData = new Map<string, {
+      installments: QueryDocumentSnapshot<DbCampParticipantInstallment, DbCampParticipantInstallment>[];
+      stripeSessions: QueryDocumentSnapshot<DbStripeCheckoutSession, DbStripeCheckoutSession>[];
+    }>();
+
+    participants.forEach(participantDoc => {
+      const participantId = participantDoc.id;
+      newInstallmentsData.set(participantId, { installments: [], stripeSessions: [] });
+
+      // Subscribe to installments subcollection
+      const installmentsRef = collection(db, DbCollections.campParticipants, participantId, DbCollections.installments);
+      const installmentsQuery = queryT(installmentsRef, orderByT('createdAt', 'desc'));
+      const installmentsUnsubscribe = onSnapshot(installmentsQuery, (snapshot) => {
+        setInstallmentsData(prev => {
+          const updated = new Map(prev);
+          const current = updated.get(participantId) || { installments: [], stripeSessions: [] };
+          updated.set(participantId, { ...current, installments: snapshot.docs as QueryDocumentSnapshot<DbCampParticipantInstallment, DbCampParticipantInstallment>[] });
+          return updated;
+        });
+      });
+      unsubscribes.push(installmentsUnsubscribe);
+
+      // Subscribe to stripe checkout sessions for this participant
+      const stripeSessionsRef = collection(db, DbCollections.stripeCheckoutSessions);
+      const stripeSessionsQuery = queryT(
+        stripeSessionsRef,
+        whereT('userId', '==', participantDoc.data().userId),
+        whereT('campId', '==', participantDoc.data().campId),
+        orderByT('createdAt', 'desc')
+      );
+      const stripeSessionsUnsubscribe = onSnapshot(stripeSessionsQuery, (snapshot) => {
+        setInstallmentsData(prev => {
+          const updated = new Map(prev);
+          const current = updated.get(participantId) || { installments: [], stripeSessions: [] };
+          updated.set(participantId, { ...current, stripeSessions: snapshot.docs as QueryDocumentSnapshot<DbStripeCheckoutSession, DbStripeCheckoutSession>[] });
+          return updated;
+        });
+      });
+      unsubscribes.push(stripeSessionsUnsubscribe);
+    });
+
+    return () => {
+      unsubscribes.forEach(unsubscribe => unsubscribe());
+    };
+  }, [participants]);
+
+  return installmentsData;
 }

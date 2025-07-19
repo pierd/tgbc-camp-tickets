@@ -123,13 +123,9 @@ export const AdminCampDetails: React.FC = () => {
         </div>
 
         {/* Participants Section */}
-        <div className="participants-section">
-          <h2>Participants ({participants.length})</h2>
-          {participants.length === 0 ? (
-            <div className="no-participants">
-              <p>No participants have registered for this camp yet.</p>
-            </div>
-          ) : (
+        {participants.length > 0 && (
+          <div className="participants-section">
+            <h2>Participants ({participants.length})</h2>
             <div className="participants-list">
               {participants.map((participantDoc) => {
                 const participant = participantDoc.data();
@@ -150,8 +146,8 @@ export const AdminCampDetails: React.FC = () => {
                 );
               })}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
 
       <CampModal
