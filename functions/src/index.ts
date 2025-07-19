@@ -38,7 +38,7 @@ const STRIPE_WEBHOOK_DEV_SECRET =
   "whsec_85287fbdf6aaf99ead2a184d0c60fff9130d9eff9c5de3c0ff9be1697e857dbf";
 
 export const joinCamp = onCall<JoinCampRequest>(
-  { cors: /.*/ },
+  { cors: /.*/, secrets: [STRIPE_SECRET_KEY] },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "User is not authenticated");
@@ -52,7 +52,7 @@ export const joinCamp = onCall<JoinCampRequest>(
 );
 
 export const payInstallment = onCall<PayInstallmentRequest>(
-  { cors: /.*/ },
+  { cors: /.*/, secrets: [STRIPE_SECRET_KEY] },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "User is not authenticated");
@@ -183,7 +183,7 @@ async function initiatePayment(
 }
 
 export const handleStripeWebhook = onRequest(
-  { cors: /.*/ },
+  { cors: /.*/, secrets: [STRIPE_WEBHOOK_SECRET] },
   async (request, response) => {
     const payload = request.rawBody;
     logger.debug("Stripe webhook received");
