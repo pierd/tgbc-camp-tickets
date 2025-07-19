@@ -434,7 +434,7 @@ export function Dashboard() {
       <header className="dashboard-header">
         <h1>Dashboard</h1>
         <div className="user-info">
-          <span>Welcome, {currentUser?.email}</span>
+          <span>Welcome, {profile?.name || currentUser?.email}</span>
           {isAdmin && (
             <Link to="/admin" className="nav-link">
               Admin
