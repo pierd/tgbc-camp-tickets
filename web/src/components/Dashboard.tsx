@@ -299,7 +299,11 @@ export function Dashboard() {
   const handleJoinCamp = async (campId: string, state: CampState) => {
     try {
       const returnUrl = window.location.href;
-      const result = await joinCamp({ campId, state, returnUrl });
+      const email = currentUser?.email;
+      if (!email) {
+        throw new Error("Email is required");
+      }
+      const result = await joinCamp({ campId, state, returnUrl, email });
       const { redirectUrl } = result.data;
       window.location.href = redirectUrl;
     } catch (error) {
@@ -314,10 +318,15 @@ export function Dashboard() {
   ) => {
     try {
       const returnUrl = window.location.href;
+      const email = currentUser?.email;
+      if (!email) {
+        throw new Error("Email is required");
+      }
       const result = await payInstallment({
         campId,
         returnUrl,
         installmentCount,
+        email,
       });
       const { redirectUrl } = result.data;
       window.location.href = redirectUrl;
@@ -511,6 +520,7 @@ export function Dashboard() {
           onClose={() => setJoinModalCamp(null)}
           camp={joinModalCamp}
           onJoin={handleJoinCamp}
+          userProfile={profile}
         />
       )}
 

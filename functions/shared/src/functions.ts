@@ -5,6 +5,7 @@ export const JoinCampRequest = z.object({
   campId: z.string(),
   state: z.enum(CampState),
   returnUrl: z.url(),
+  email: z.email(),
 });
 export type JoinCampRequest = z.infer<typeof JoinCampRequest>;
 
@@ -12,6 +13,7 @@ export const PayInstallmentRequest = z.object({
   campId: z.string(),
   installmentCount: z.number(),
   returnUrl: z.url(),
+  email: z.email(),
 });
 export type PayInstallmentRequest = z.infer<typeof PayInstallmentRequest>;
 
