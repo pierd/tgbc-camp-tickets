@@ -121,6 +121,16 @@ async function initiatePayment(
     );
   }
 
+  const amountCents = options.isInitialInstallment
+    ? campData.initialInstallmentCents
+    : campData.installmentCents * options.installmentCount;
+  if (participantData.paidCents + amountCents > participantCostCents) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Requested amount exceeds participant cost"
+    );
+  }
+
   if (!STRIPE_SECRET_KEY) {
     throw new Error("STRIPE_SECRET_KEY is not set");
   }
@@ -136,7 +146,7 @@ async function initiatePayment(
           product_data: {
             name: campData.name,
           },
-          unit_amount: campData.initialInstallmentCents,
+          unit_amount: amountCents,
         },
         quantity: 1,
       },
@@ -165,7 +175,7 @@ async function initiatePayment(
       status: "pending",
       paymentIntents: [],
       sessionUrl: session.url || cancelUrl,
-      cents: campData.initialInstallmentCents,
+      cents: amountCents,
       ...(options.isInitialInstallment
         ? {
             isInitialInstallment: true,
