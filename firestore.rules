@@ -15,8 +15,12 @@ service cloud.firestore {
       allow read: if request.auth.uid != null;
     }
 
-    match /participants/{docId}/{document=**} {
+    match /participants/{docId} {
       allow read: if request.auth.uid != null && resource.data.userId == request.auth.uid;
+
+      match /installments/{installmentId} {
+        allow read: if request.auth.uid != null && get(/databases/$(database)/documents/participants/$(docId)).data.userId == request.auth.uid;
+      }
     }
 
     match /stripeCheckoutSessions/{sessionId} {
