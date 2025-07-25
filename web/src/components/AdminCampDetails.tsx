@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { useIsAdmin, whereT } from "../firebaseHooks";
+import { useIsAdmin, useStreamDocumentById, whereT } from "../firebaseHooks";
 import {
   collection,
   CollectionReference,
@@ -14,6 +14,7 @@ import {
   DbCollections,
   type DbCamp,
   type DbCampParticipant,
+  type DbProfile,
 } from "shared";
 import {
   useStreamDocument,
@@ -30,6 +31,13 @@ export const AdminCampDetails: React.FC = () => {
   const { currentUser } = useAuth();
   const isAdmin = useIsAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Fetch user profile
+  const profileData = useStreamDocumentById(
+    collection(db, DbCollections.profiles),
+    currentUser?.uid
+  );
+  const profile = profileData.value?.data() as DbProfile | undefined;
 
   if (!campId) {
     return <div>Camp ID not found</div>;
@@ -89,7 +97,7 @@ export const AdminCampDetails: React.FC = () => {
         <div className="admin-header-content">
           <div>
             <h1>Camp Details: {camp.name}</h1>
-            <p>Welcome, {currentUser?.email}</p>
+            <p>Welcome, {profile?.name || currentUser?.email}</p>
           </div>
           <div className="admin-nav">
             <Link to="/admin" className="nav-link">
