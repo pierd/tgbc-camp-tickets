@@ -308,16 +308,9 @@ export function Dashboard() {
 
   const handleJoinCamp = async (campId: string, state: CampState) => {
     try {
-      // Option 1: Use current page (default behavior)
-      const returnUrl = window.location.href;
-      
-      // Option 2: Use a specific success page
-      // const returnUrl = `${window.location.origin}/payment-success`;
-      
-      // Option 3: Use different URLs for iframe vs normal
-      // const returnUrl = window.top !== window.self 
-      //   ? campTicketsUrl 
-      //   : window.location.href;
+      const returnUrl = window.top !== window.self 
+        ? campTicketsUrl
+        : window.location.href;
 
       const email = currentUser?.email;
       if (!email) {
@@ -338,13 +331,6 @@ export function Dashboard() {
     installmentCount: number
   ) => {
     try {
-      // Option 1: Use current page (default behavior)
-      // const returnUrl = window.location.href;
-      
-      // Option 2: Use a specific success page
-      // const returnUrl = `${window.location.origin}/payment-success`;
-      
-      // Option 3: Use different URLs for iframe vs normal
       const returnUrl = window.top !== window.self 
         ? campTicketsUrl
         : window.location.href;
