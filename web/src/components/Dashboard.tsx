@@ -304,6 +304,8 @@ export function Dashboard() {
     }
   };
 
+  const campTicketsUrl = "https://www.toughguybookclub.com/camp_tickets_iframe";
+
   const handleJoinCamp = async (campId: string, state: CampState) => {
     try {
       // Option 1: Use current page (default behavior)
@@ -314,7 +316,7 @@ export function Dashboard() {
       
       // Option 3: Use different URLs for iframe vs normal
       // const returnUrl = window.top !== window.self 
-      //   ? `${window.location.origin}/payment-success` 
+      //   ? campTicketsUrl 
       //   : window.location.href;
 
       const email = currentUser?.email;
@@ -344,7 +346,7 @@ export function Dashboard() {
       
       // Option 3: Use different URLs for iframe vs normal
       const returnUrl = window.top !== window.self 
-        ? `${window.location.origin}/payment-success` 
+        ? campTicketsUrl
         : window.location.href;
 
       const email = currentUser?.email;
