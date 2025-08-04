@@ -306,19 +306,25 @@ export function Dashboard() {
 
   const handleJoinCamp = async (campId: string, state: CampState) => {
     try {
+      // Option 1: Use current page (default behavior)
       const returnUrl = window.location.href;
+      
+      // Option 2: Use a specific success page
+      // const returnUrl = `${window.location.origin}/payment-success`;
+      
+      // Option 3: Use different URLs for iframe vs normal
+      // const returnUrl = window.top !== window.self 
+      //   ? `${window.location.origin}/payment-success` 
+      //   : window.location.href;
+
       const email = currentUser?.email;
       if (!email) {
         throw new Error("Email is required");
       }
       const result = await joinCamp({ campId, state, returnUrl, email });
       const { redirectUrl } = result.data;
-      // Check if we're in an iframe and navigate parent window instead
-      if (window.top && window.top !== window.self) {
-        window.top.location.href = redirectUrl;
-      } else {
-        window.location.href = redirectUrl;
-      }
+      // Open Stripe checkout in a new window/tab
+      window.open(redirectUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error("Failed to join camp:", error);
       throw error;
@@ -330,7 +336,17 @@ export function Dashboard() {
     installmentCount: number
   ) => {
     try {
-      const returnUrl = window.location.href;
+      // Option 1: Use current page (default behavior)
+      // const returnUrl = window.location.href;
+      
+      // Option 2: Use a specific success page
+      // const returnUrl = `${window.location.origin}/payment-success`;
+      
+      // Option 3: Use different URLs for iframe vs normal
+      const returnUrl = window.top !== window.self 
+        ? `${window.location.origin}/payment-success` 
+        : window.location.href;
+
       const email = currentUser?.email;
       if (!email) {
         throw new Error("Email is required");
@@ -342,12 +358,8 @@ export function Dashboard() {
         email,
       });
       const { redirectUrl } = result.data;
-      // Check if we're in an iframe and navigate parent window instead
-      if (window.top && window.top !== window.self) {
-        window.top.location.href = redirectUrl;
-      } else {
-        window.location.href = redirectUrl;
-      }
+      // Open Stripe checkout in a new window/tab
+      window.open(redirectUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error("Failed to pay installment:", error);
       throw error;
