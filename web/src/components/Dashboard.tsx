@@ -313,7 +313,12 @@ export function Dashboard() {
       }
       const result = await joinCamp({ campId, state, returnUrl, email });
       const { redirectUrl } = result.data;
-      window.location.href = redirectUrl;
+      // Check if we're in an iframe and navigate parent window instead
+      if (window.top && window.top !== window.self) {
+        window.top.location.href = redirectUrl;
+      } else {
+        window.location.href = redirectUrl;
+      }
     } catch (error) {
       console.error("Failed to join camp:", error);
       throw error;
@@ -337,7 +342,12 @@ export function Dashboard() {
         email,
       });
       const { redirectUrl } = result.data;
-      window.location.href = redirectUrl;
+      // Check if we're in an iframe and navigate parent window instead
+      if (window.top && window.top !== window.self) {
+        window.top.location.href = redirectUrl;
+      } else {
+        window.location.href = redirectUrl;
+      }
     } catch (error) {
       console.error("Failed to pay installment:", error);
       throw error;
