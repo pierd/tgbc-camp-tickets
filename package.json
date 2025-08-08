@@ -1,10 +1,12 @@
 {
   "name": "tgbc-camp-tickets",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "concurrently -n emulator,shared,functions,web -c \"blue.bold,green.bold,yellow.bold,magenta.bold\" \"firebase emulators:start\" \"pnpm --filter shared dev\" \"pnpm --filter functions dev\" \"pnpm --filter web dev\"",
     "build": "pnpm --recursive build",
-    "lint": "pnpm --recursive lint",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "test": "pnpm --recursive test",
     "stripe:login": "stripe login --interactive",
     "stripe:listen": "stripe listen --forward-to http://127.0.0.1:5001/tgbc-camp-tickets/australia-southeast2/handleStripeWebhook"
@@ -12,6 +14,12 @@
   "devDependencies": {
     "concurrently": "^9.2.0",
     "firebase": "^11.10.0",
+    "eslint": "^9.30.1",
+    "@eslint/js": "^9.30.1",
+    "globals": "^16.3.0",
+    "typescript-eslint": "^8.35.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
     "pnpm": "^10.12.1"
   }
 }

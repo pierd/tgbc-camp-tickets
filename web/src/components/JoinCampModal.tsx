@@ -50,7 +50,9 @@ const JoinCampModal: React.FC<JoinCampModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const participantCost = calculateParticipantCostCents(camp, selectedState);
   const discountCents = camp.discountPerStateCents[selectedState] ?? 0;

@@ -24,6 +24,7 @@ import {
   PaymentResponse,
   calculateParticipantCostCents,
   isProfileComplete,
+  type CampId,
 } from "shared";
 import { useMemo, useState, useEffect } from "react";
 import { httpsCallable } from "firebase/functions";
@@ -31,6 +32,7 @@ import { functions } from "../firebase";
 import JoinCampModal from "./JoinCampModal";
 import PaymentModal from "./PaymentModal";
 import ProfileModal from "./ProfileModal";
+import { formatDate } from "../utils";
 
 const joinCamp = httpsCallable<JoinCampRequest, PaymentResponse>(
   functions,
@@ -41,15 +43,13 @@ const payInstallment = httpsCallable<PayInstallmentRequest, PaymentResponse>(
   "payInstallment"
 );
 
+type CampWithId = DbCamp & { id: CampId };
+
 export function Dashboard() {
   const { currentUser, logout } = useAuth();
   const isAdmin = useIsAdmin();
-  const [joinModalCamp, setJoinModalCamp] = useState<
-    (DbCamp & { id: string }) | null
-  >(null);
-  const [paymentModalCamp, setPaymentModalCamp] = useState<
-    (DbCamp & { id: string }) | null
-  >(null);
+  const [joinModalCamp, setJoinModalCamp] = useState<CampWithId | null>(null);
+  const [paymentModalCamp, setPaymentModalCamp] = useState<CampWithId | null>(null);
   const [, setShowProfileModal] = useState(false);
 
   // Payment result banner state
@@ -117,35 +117,32 @@ export function Dashboard() {
     whereT("userId", "==", currentUser?.uid || ""),
     orderByT("createdAt", "desc")
   );
-  const participants = useFirebaseQuery(participantsQuery);
+  const userCampParticipants = useFirebaseQuery(participantsQuery);
+  const campParticipation = userCampParticipants.reduce((acc, doc) => {
+    const data = doc.data();
+    return { ...acc, [data.campId]: data };
+  }, {} as { [campId: CampId]: DbCampParticipant });
 
   // Fetch installments and stripe sessions for each participant
-  const installmentsData = useParticipantInstallments(participants as any);
+  const installmentsData = useParticipantInstallments(userCampParticipants);
 
   // Categorize camps
   const categorizedCamps = useMemo(() => {
-    if (!currentUser?.uid)
-      return { participating: [], available: [], past: [] };
+    if (!currentUser?.uid) {
+      return { participating: [], available: [], past: [], loading: true };
+    }
 
-    const userParticipations = new Map<string, DbCampParticipant>();
-    participants.forEach((doc) => {
-      const participant = doc.data() as DbCampParticipant;
-      userParticipations.set(participant.campId, participant);
-    });
-
-    const participating: (DbCamp & { id: string })[] = [];
-    const available: (DbCamp & { id: string })[] = [];
-    const past: (DbCamp & { id: string })[] = [];
+    const participating: (DbCamp & { id: CampId })[] = [];
+    const available: (DbCamp & { id: CampId })[] = [];
+    const past: (DbCamp & { id: CampId })[] = [];
 
     const now = new Date();
 
     camps.forEach((campDoc) => {
-      const camp = campDoc.data() as DbCamp;
+      const camp = campDoc.data();
       const campWithId = { ...camp, id: campDoc.id };
-      const userParticipation = userParticipations.get(campDoc.id);
-      const deadlineDate = new Date(
-        camp.lastInstallmentDeadline.seconds * 1000
-      );
+      const userParticipation = campParticipation[campDoc.id];
+      const deadlineDate = camp.lastInstallmentDeadline.toDate();
 
       if (userParticipation) {
         // User participates in this camp
@@ -169,12 +166,9 @@ export function Dashboard() {
     });
 
     // Sort each list chronologically by lastInstallmentDeadline
-    const sortByDeadline = (
-      a: DbCamp & { id: string },
-      b: DbCamp & { id: string }
-    ) => {
+    const sortByDeadline = (a: CampWithId, b: CampWithId) => {
       return (
-        a.lastInstallmentDeadline.seconds - b.lastInstallmentDeadline.seconds
+        a.lastInstallmentDeadline.toMillis() - b.lastInstallmentDeadline.toMillis()
       );
     };
 
@@ -182,8 +176,8 @@ export function Dashboard() {
     available.sort(sortByDeadline);
     past.sort(sortByDeadline);
 
-    return { participating, available, past };
-  }, [camps, participants, currentUser?.uid]);
+    return { participating, available, past, loading: false };
+  }, [camps, campParticipation, currentUser?.uid]);
 
   const formatCurrency = (cents: number, currency: Currency) => {
     const dollars = cents / 100;
@@ -193,21 +187,20 @@ export function Dashboard() {
     }).format(dollars);
   };
 
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return "N/A";
-    return new Date(timestamp.seconds * 1000).toLocaleDateString();
-  };
-
   const renderInstallmentBoxes = (
-    camp: DbCamp & { id: string },
+    camp: CampWithId,
     userParticipation: DbCampParticipant | undefined
   ) => {
-    if (!userParticipation) return null;
+    if (!userParticipation) {
+      return null;
+    }
 
     const participantId = `${userParticipation.userId}-${userParticipation.campId}`;
     const participantData = installmentsData.get(participantId);
 
-    if (!participantData) return null;
+    if (!participantData) {
+      return null;
+    }
 
     const { installments, stripeSessions } = participantData;
 
@@ -234,7 +227,9 @@ export function Dashboard() {
       const sessionId = session.sessionId;
 
       // Skip if we've already processed this session
-      if (processedSessionIds.has(sessionId)) return;
+      if (processedSessionIds.has(sessionId)) {
+        return;
+      }
 
       // Find the corresponding installment document
       const installmentDoc = installments.find(
@@ -269,7 +264,9 @@ export function Dashboard() {
       }
     });
 
-    if (installmentBoxes.length === 0) return null;
+    if (installmentBoxes.length === 0) {
+      return null;
+    }
 
     return (
       <div className="installment-boxes">
@@ -354,13 +351,11 @@ export function Dashboard() {
   };
 
   const renderCampCard = (
-    camp: DbCamp & { id: string },
+    camp: CampWithId,
     type: "participating" | "available" | "past"
   ) => {
-    const userParticipation = participants
-      .find((doc) => doc.data().campId === camp.id)
-      ?.data() as DbCampParticipant | undefined;
-    const deadlineDate = new Date(camp.lastInstallmentDeadline.seconds * 1000);
+    const userParticipation = campParticipation[camp.id];
+    const deadlineDate = camp.lastInstallmentDeadline.toDate();
     const now = new Date();
     const daysUntilDeadline = Math.ceil(
       (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
@@ -497,8 +492,20 @@ export function Dashboard() {
       )}
 
       <main className="dashboard-content">
+        {categorizedCamps.loading && (
+          <section className="camp-section">
+            <h2>Loading camps...</h2>
+          </section>
+        )}
+
+        {!categorizedCamps.loading && categorizedCamps.participating.length === 0 && categorizedCamps.available.length === 0 && categorizedCamps.past.length === 0 && (
+          <section className="camp-section">
+            <h2>No camps found</h2>
+          </section>
+        )}
+
         {/* Camps the user participates in */}
-        {categorizedCamps.participating.length > 0 && (
+        {!categorizedCamps.loading && categorizedCamps.participating.length > 0 && (
           <section className="camp-section">
             <h2>
               Camps You're Participating In (
@@ -513,7 +520,7 @@ export function Dashboard() {
         )}
 
         {/* Camps available to join */}
-        {categorizedCamps.available.length > 0 && (
+        {!categorizedCamps.loading && categorizedCamps.available.length > 0 && (
           <section className="camp-section">
             <h2>
               Camps Available to Join ({categorizedCamps.available.length})
@@ -527,7 +534,7 @@ export function Dashboard() {
         )}
 
         {/* Past camps */}
-        {categorizedCamps.past.length > 0 && (
+        {!categorizedCamps.loading && categorizedCamps.past.length > 0 && (
           <section className="camp-section">
             <h2>Past Camps ({categorizedCamps.past.length})</h2>
             <div className="camps-grid">
@@ -554,11 +561,7 @@ export function Dashboard() {
           isOpen={!!paymentModalCamp}
           onClose={() => setPaymentModalCamp(null)}
           camp={paymentModalCamp}
-          participant={
-            participants
-              .find((doc) => doc.data().campId === paymentModalCamp.id)
-              ?.data() as DbCampParticipant
-          }
+          participant={campParticipation[paymentModalCamp.id]}
           onPay={handlePayInstallment}
         />
       )}

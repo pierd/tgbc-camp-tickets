@@ -18,6 +18,7 @@ import {
   type DbProfile,
 } from "shared";
 import CampModal from "./CampModal";
+import { formatDate } from "../utils";
 
 export const AdminDashboard: React.FC = () => {
   const { currentUser } = useAuth();
@@ -46,11 +47,6 @@ export const AdminDashboard: React.FC = () => {
       style: "currency",
       currency: currency.toUpperCase(),
     }).format(dollars);
-  };
-
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return "N/A";
-    return new Date(timestamp.seconds * 1000).toLocaleDateString();
   };
 
   const handleOpenCreateModal = () => {

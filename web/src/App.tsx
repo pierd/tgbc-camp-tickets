@@ -1,4 +1,4 @@
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { useAuth } from "./contexts/AuthContext";
 import { AuthPage } from "./components/AuthPage";
 import { Dashboard } from "./components/Dashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
@@ -10,6 +10,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import "./App.css";
+import { AuthProvider } from "./components/AuthProvider";
 
 function AppContent() {
   const { currentUser } = useAuth();

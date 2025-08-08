@@ -24,7 +24,9 @@ export default function PaymentModal({
   const [installmentCount, setInstallmentCount] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const totalCostCents = calculateParticipantCostCents(camp, participant.state);
   const remainingCents = totalCostCents - participant.paidCents;

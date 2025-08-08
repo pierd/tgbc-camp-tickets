@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  collection,
   addDoc,
   updateDoc,
   doc,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "../firebase";
+import type { Timestamp as TimestampType } from "@firebase/firestore-types";
 import {
   DbCollections,
   type DbCamp,
@@ -15,6 +14,7 @@ import {
   campStateDisplayName,
   isSameCountry,
 } from "shared";
+import { collectionT } from "../firebaseHooks";
 
 interface CampModalProps {
   isOpen: boolean;
@@ -56,9 +56,11 @@ const CampModal: React.FC<CampModalProps> = ({
   };
 
   // Helper function to convert Timestamp to date string for input
-  const timestampToDateString = (timestamp: any): string => {
-    if (!timestamp) return "";
-    const date = new Date(timestamp.seconds * 1000);
+  const timestampToDateString = (timestamp: Timestamp | TimestampType | undefined): string => {
+    if (!timestamp) {
+      return "";
+    }
+    const date = timestamp.toDate();
     return date.toISOString().split("T")[0];
   };
 
@@ -69,7 +71,7 @@ const CampModal: React.FC<CampModalProps> = ({
   };
 
   // Validation function
-  const validateForm = (): string[] => {
+  const validateForm = useCallback((): string[] => {
     const errors: string[] = [];
 
     // Check if any discount is bigger than base cost
@@ -102,13 +104,13 @@ const CampModal: React.FC<CampModalProps> = ({
     }
 
     return errors;
-  };
+  }, [formData]);
 
   // Update validation errors when form data changes
   useEffect(() => {
     const errors = validateForm();
     setValidationErrors(errors);
-  }, [formData]);
+  }, [formData, validateForm]);
 
   // Initialize form data when editing
   useEffect(() => {
@@ -169,13 +171,13 @@ const CampModal: React.FC<CampModalProps> = ({
 
       if (mode === "create") {
         const now = Timestamp.now();
-        await addDoc(collection(db, DbCollections.camps), {
+        await addDoc(collectionT<DbCamp>(DbCollections.camps), {
           ...campData,
           createdAt: now,
           updatedAt: now,
         });
       } else if (mode === "edit" && campToEdit) {
-        const campRef = doc(db, DbCollections.camps, campToEdit.id);
+        const campRef = doc(collectionT<DbCamp>(DbCollections.camps), campToEdit.id);
         await updateDoc(campRef, {
           ...campData,
           updatedAt: Timestamp.now(),

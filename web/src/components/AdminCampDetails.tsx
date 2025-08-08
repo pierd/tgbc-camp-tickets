@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { collectionT, useIsAdmin, useStreamDocumentById, whereT } from "../firebaseHooks";
-import { doc } from "firebase/firestore";
 import {
   calculateParticipantCostCents,
   CampState,
@@ -12,7 +11,6 @@ import {
   type DbProfile,
 } from "shared";
 import {
-  useStreamDocument,
   useFirebaseQuery,
   queryT,
   orderByT,
@@ -20,6 +18,7 @@ import {
 import { campStateDisplayName } from "shared";
 import CampModal from "./CampModal";
 import { ParticipantProfile } from "./ParticipantProfile";
+import { formatDate } from "../utils";
 
 export const AdminCampDetails: React.FC = () => {
   const { campId } = useParams<{ campId: string }>();
@@ -34,21 +33,21 @@ export const AdminCampDetails: React.FC = () => {
   );
   const profile = profileData.value?.data() as DbProfile | undefined;
 
-  if (!campId) {
-    return <div>Camp ID not found</div>;
-  }
 
   // Get camp details
-  const campRef = doc(collectionT<DbCamp>(DbCollections.camps), campId);
-  const campData = useStreamDocument(campRef);
+  const campData = useStreamDocumentById(collectionT<DbCamp>(DbCollections.camps), campId);
 
   // Get participants for this camp
-  const participantsQuery = queryT(
+  const participantsQuery = campId ? queryT(
     collectionT<DbCampParticipant>(DbCollections.campParticipants),
     whereT("campId", "==", campId),
     orderByT("createdAt", "desc")
-  );
+  ) : undefined;
   const participants = useFirebaseQuery(participantsQuery);
+
+  if (!campId) {
+    return <div>Camp ID not found</div>;
+  }
 
   if (!isAdmin) {
     return <div>You are not authorized to access this page</div>;
@@ -73,11 +72,6 @@ export const AdminCampDetails: React.FC = () => {
       style: "currency",
       currency: camp.currency.toUpperCase(),
     }).format(dollars);
-  };
-
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return "N/A";
-    return new Date(timestamp.seconds * 1000).toLocaleDateString();
   };
 
   return (

@@ -17,7 +17,7 @@ import {
   type DocumentData,
   collection,
 } from "firebase/firestore";
-import _ from "lodash";
+import isEqual from "fast-deep-equal/es6";
 import { useAuth } from "./contexts/AuthContext";
 import {
   DbCollections,
@@ -68,7 +68,6 @@ export function whereT<
   opStr: "in",
   value: Array<AppModelType[K]>
 ): QueryConstraintT<AppModelType, DbModelType>;
-// eslint-disable-next-line no-redeclare
 export function whereT<
   AppModelType,
   DbModelType extends DocumentData,
@@ -78,7 +77,6 @@ export function whereT<
   opStr: WhereFilterOp,
   value: AppModelType[K]
 ): QueryConstraintT<AppModelType, DbModelType>;
-// eslint-disable-next-line no-redeclare
 export function whereT<
   AppModelType,
   DbModelType extends DocumentData,
@@ -152,7 +150,7 @@ export function useFirebaseQuerySnapshotUnsafe<
             // Compare new and old docs before updating state
             if (
               newDocs.length !== docsRef.current.length ||
-              !newDocs.every((doc, i) => _.isEqual(doc, docsRef.current[i]))
+              !newDocs.every((doc, i) => isEqual(doc, docsRef.current[i]))
             ) {
               docsRef.current = newDocs;
 

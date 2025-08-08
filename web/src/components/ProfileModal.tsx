@@ -64,7 +64,9 @@ export default function ProfileModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="modal-overlay profile-modal-overlay">

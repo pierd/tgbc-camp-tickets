@@ -29,8 +29,8 @@ export function AuthForm({ mode }: AuthFormProps) {
       } else {
         await signUp(email, password);
       }
-    } catch (error: any) {
-      setError(error.message || "Failed to " + mode);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to " + mode);
     } finally {
       setLoading(false);
     }
@@ -41,8 +41,8 @@ export function AuthForm({ mode }: AuthFormProps) {
       setError("");
       setLoading(true);
       await signInWithGoogle();
-    } catch (error: any) {
-      setError(error.message || "Failed to sign in with Google");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to sign in with Google");
     } finally {
       setLoading(false);
     }
