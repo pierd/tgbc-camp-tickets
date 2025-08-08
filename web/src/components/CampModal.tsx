@@ -42,6 +42,7 @@ const CampModal: React.FC<CampModalProps> = ({
   });
 
   const [newStateToAdd, setNewStateToAdd] = useState<CampState | "">("");
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Helper function to convert integer dollars to cents
   const dollarsToCents = (dollars: string): number => {
@@ -66,6 +67,48 @@ const CampModal: React.FC<CampModalProps> = ({
     const date = new Date(dateString);
     return Timestamp.fromDate(date);
   };
+
+  // Validation function
+  const validateForm = (): string[] => {
+    const errors: string[] = [];
+
+    // Check if any discount is bigger than base cost
+    for (const [state, discountCents] of (Object.entries(formData.discountPerStateCents) as [CampState, number][])) {
+      if (discountCents > formData.baseCostCents) {
+        errors.push(`Discount for ${campStateDisplayName[state]} cannot be larger than base cost`);
+      }
+    }
+
+    // Find the biggest discount
+    const biggestDiscount = Math.max(...Object.values(formData.discountPerStateCents), 0);
+
+    // Check if initial installment is bigger than base cost minus biggest discount
+    const maxInitialInstallment = formData.baseCostCents - biggestDiscount;
+    if (formData.initialInstallmentCents > maxInitialInstallment) {
+      errors.push(`Initial installment cannot be larger than base cost minus biggest discount (${centsToDollars(maxInitialInstallment)})`);
+    }
+
+    // Check if installment amount is valid (non-negative)
+    if (formData.installmentCents < 0) {
+      errors.push("Installment amount cannot be negative");
+    } else {
+      // For every discount: (base minus discount minus initial installment) must be divisible by installment amount
+      for (const [state, discountCents] of (Object.entries(formData.discountPerStateCents) as [CampState, number][])) {
+        const remainingAmount = formData.baseCostCents - discountCents - formData.initialInstallmentCents;
+        if (remainingAmount >= 0 && remainingAmount % formData.installmentCents !== 0) {
+          errors.push(`For ${campStateDisplayName[state]}: remaining amount after discount and initial installment (${centsToDollars(remainingAmount)}) must be divisible by installment amount (${centsToDollars(formData.installmentCents)})`);
+        }
+      }
+    }
+
+    return errors;
+  };
+
+  // Update validation errors when form data changes
+  useEffect(() => {
+    const errors = validateForm();
+    setValidationErrors(errors);
+  }, [formData]);
 
   // Initialize form data when editing
   useEffect(() => {
@@ -102,6 +145,13 @@ const CampModal: React.FC<CampModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check for validation errors before submitting
+    const errors = validateForm();
+    if (errors.length > 0) {
+      alert("Please fix the following errors:\n" + errors.join("\n"));
+      return;
+    }
 
     try {
       const campData = {
@@ -197,6 +247,16 @@ const CampModal: React.FC<CampModalProps> = ({
           </button>
         </div>
         <form onSubmit={handleSubmit} className="camp-form">
+          {validationErrors.length > 0 && (
+            <div className="validation-errors">
+              <h4>Validation Errors:</h4>
+              <ul>
+                {validationErrors.map((error, index) => (
+                  <li key={index} className="error-message">{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="form-group">
             <label htmlFor="name">Camp Name</label>
             <input
@@ -322,6 +382,11 @@ const CampModal: React.FC<CampModalProps> = ({
                   required
                 />
               </div>
+              {formData.baseCostCents > 0 && (
+                <div className="form-help">
+                  Max: {centsToDollars(Math.max(0, formData.baseCostCents - Math.max(...Object.values(formData.discountPerStateCents), 0)))}
+                </div>
+              )}
             </div>
 
             <div className="form-group">
@@ -447,7 +512,11 @@ const CampModal: React.FC<CampModalProps> = ({
             <button type="button" onClick={onClose} className="btn-secondary">
               Cancel
             </button>
-            <button type="submit" className="btn-primary">
+            <button
+              type="submit"
+              className={`btn-primary ${validationErrors.length > 0 ? 'btn-disabled' : ''}`}
+              disabled={validationErrors.length > 0}
+            >
               {mode === "create" ? "Create Camp" : "Update Camp"}
             </button>
           </div>

@@ -972,6 +972,50 @@
   transform: translateY(-1px);
 }
 
+.btn-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-disabled:hover {
+  background: #667eea;
+  transform: none !important;
+}
+
+/* Validation Styles */
+.validation-errors {
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.validation-errors h4 {
+  margin: 0 0 0.5rem 0;
+  color: #c33;
+  font-size: 1rem;
+}
+
+.validation-errors ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.validation-errors .error-message {
+  color: #c33;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.form-help {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .section-header {
