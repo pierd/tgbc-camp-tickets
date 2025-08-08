@@ -8,9 +8,8 @@ import {
   whereT,
   useParticipantInstallments,
   useStreamDocumentById,
+  collectionT,
 } from "../firebaseHooks";
-import { collection } from "firebase/firestore";
-import { db } from "../firebase";
 import {
   DbCollections,
   type DbCamp,
@@ -92,7 +91,7 @@ export function Dashboard() {
 
   // Fetch user profile
   const profileData = useStreamDocumentById(
-    collection(db, DbCollections.profiles),
+    collectionT<DbProfile>(DbCollections.profiles),
     currentUser?.uid
   );
 
@@ -107,12 +106,12 @@ export function Dashboard() {
   console.log("currentUser.uid", currentUser?.uid);
 
   // Fetch all camps
-  const campsRef = collection(db, DbCollections.camps);
+  const campsRef = collectionT<DbCamp>(DbCollections.camps);
   const campsQuery = queryT(campsRef, orderByT("createdAt", "desc"));
   const camps = useFirebaseQuery(campsQuery);
 
   // Fetch user's camp participants
-  const participantsRef = collection(db, DbCollections.campParticipants);
+  const participantsRef = collectionT<DbCampParticipant>(DbCollections.campParticipants);
   const participantsQuery = queryT(
     participantsRef,
     whereT("userId", "==", currentUser?.uid || ""),
@@ -308,7 +307,7 @@ export function Dashboard() {
 
   const handleJoinCamp = async (campId: string, state: CampState) => {
     try {
-      const returnUrl = window.top !== window.self 
+      const returnUrl = window.top !== window.self
         ? campTicketsUrl
         : window.location.href;
 
@@ -331,7 +330,7 @@ export function Dashboard() {
     installmentCount: number
   ) => {
     try {
-      const returnUrl = window.top !== window.self 
+      const returnUrl = window.top !== window.self
         ? campTicketsUrl
         : window.location.href;
 
@@ -393,8 +392,16 @@ export function Dashboard() {
               <strong>Currency:</strong> {camp.currency.toUpperCase()}
             </div>
             <div className="camp-pricing">
-              <strong>Total Cost:</strong>{" "}
-              {formatCurrency(camp.totalCostCents, camp.currency)}
+              <strong>Base Cost:</strong>{" "}
+              {formatCurrency(camp.baseCostCents, camp.currency)}
+              {Object.entries(camp.discountPerStateCents).map(([state, discountCents]) =>
+                discountCents > 0 ? (
+                  <div className="camp-discount" key={state}>
+                    <strong>{campStateDisplayName[state as CampState]} Discount:</strong>{" "}
+                    {formatCurrency(discountCents, camp.currency)}
+                  </div>
+                ) : null
+              )}
             </div>
             <div className="camp-dates">
               <strong>Created:</strong> {formatDate(camp.createdAt)}

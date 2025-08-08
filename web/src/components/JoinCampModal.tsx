@@ -53,7 +53,7 @@ const JoinCampModal: React.FC<JoinCampModalProps> = ({
   if (!isOpen) return null;
 
   const participantCost = calculateParticipantCostCents(camp, selectedState);
-  const isInState = selectedState === camp.state;
+  const discountCents = camp.discountPerStateCents[selectedState] ?? 0;
 
   return (
     <div className="modal-overlay">
@@ -79,8 +79,8 @@ const JoinCampModal: React.FC<JoinCampModalProps> = ({
                 <strong>Currency:</strong> {camp.currency.toUpperCase()}
               </div>
               <div>
-                <strong>Total Cost:</strong>{" "}
-                {formatCurrency(camp.totalCostCents, camp.currency)}
+                <strong>Base Cost:</strong>{" "}
+                {formatCurrency(camp.baseCostCents, camp.currency)}
               </div>
               <div>
                 <strong>Initial Installment:</strong>{" "}
@@ -121,23 +121,20 @@ const JoinCampModal: React.FC<JoinCampModalProps> = ({
           <div className="cost-breakdown">
             <h3>Cost Breakdown</h3>
             <div className="cost-details">
-              <div>
-                <strong>Base Cost:</strong>{" "}
-                {formatCurrency(camp.totalCostCents, camp.currency)}
-              </div>
-              {isInState ? (
-                <div>
-                  <strong>In-State Extra Cost:</strong> +
-                  {formatCurrency(camp.inStateExtraCostCents, camp.currency)}
-                </div>
-              ) : (
-                <div>
-                  <strong>Out-of-State Rebate:</strong> -
-                  {formatCurrency(camp.outOfStateRebateCents, camp.currency)}
-                </div>
+              {discountCents > 0 && (
+                <>
+                  <div>
+                    <strong>Base Cost:</strong>{" "}
+                    {formatCurrency(camp.baseCostCents, camp.currency)}
+                  </div>
+                  <div>
+                    <strong>Discount:</strong> -
+                    {formatCurrency(discountCents, camp.currency)}
+                  </div>
+                </>
               )}
               <div className="total-cost">
-                <strong>Your Total Cost:</strong>{" "}
+                <strong>Total Cost:</strong>{" "}
                 {formatCurrency(participantCost, camp.currency)}
               </div>
               <div className="initial-payment">

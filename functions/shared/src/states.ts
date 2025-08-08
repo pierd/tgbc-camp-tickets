@@ -101,3 +101,7 @@ export const campStateDisplayName: Record<CampState, string> = {
   [CampState.usWI]: "Wisconsin",
   [CampState.usWY]: "Wyoming",
 };
+
+export function isSameCountry(state1: CampState, state2: CampState) {
+  return state1[0] === state2[0] && state1[1] === state2[1];
+}

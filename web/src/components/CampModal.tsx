@@ -13,6 +13,7 @@ import {
   CampState,
   Currency,
   campStateDisplayName,
+  isSameCountry,
 } from "shared";
 
 interface CampModalProps {
@@ -35,11 +36,12 @@ const CampModal: React.FC<CampModalProps> = ({
     currency: Currency.AUD,
     initialInstallmentCents: 0,
     installmentCents: 0,
-    totalCostCents: 0,
-    outOfStateRebateCents: 0,
-    inStateExtraCostCents: 0,
+    baseCostCents: 0,
+    discountPerStateCents: {} as Partial<Record<CampState, number>>,
     lastInstallmentDeadline: "",
   });
+
+  const [newStateToAdd, setNewStateToAdd] = useState<CampState | "">("");
 
   // Helper function to convert integer dollars to cents
   const dollarsToCents = (dollars: string): number => {
@@ -76,9 +78,8 @@ const CampModal: React.FC<CampModalProps> = ({
         currency: campToEdit.currency,
         initialInstallmentCents: campToEdit.initialInstallmentCents,
         installmentCents: campToEdit.installmentCents,
-        totalCostCents: campToEdit.totalCostCents,
-        outOfStateRebateCents: campToEdit.outOfStateRebateCents,
-        inStateExtraCostCents: campToEdit.inStateExtraCostCents,
+        baseCostCents: campToEdit.baseCostCents,
+        discountPerStateCents: campToEdit.discountPerStateCents,
         lastInstallmentDeadline: timestampToDateString(
           campToEdit.lastInstallmentDeadline
         ),
@@ -92,9 +93,8 @@ const CampModal: React.FC<CampModalProps> = ({
         currency: Currency.AUD,
         initialInstallmentCents: 0,
         installmentCents: 0,
-        totalCostCents: 0,
-        outOfStateRebateCents: 0,
-        inStateExtraCostCents: 0,
+        baseCostCents: 0,
+        discountPerStateCents: {},
         lastInstallmentDeadline: "",
       });
     }
@@ -110,9 +110,8 @@ const CampModal: React.FC<CampModalProps> = ({
         currency: formData.currency,
         initialInstallmentCents: formData.initialInstallmentCents,
         installmentCents: formData.installmentCents,
-        totalCostCents: formData.totalCostCents,
-        outOfStateRebateCents: formData.outOfStateRebateCents,
-        inStateExtraCostCents: formData.inStateExtraCostCents,
+        baseCostCents: formData.baseCostCents,
+        discountPerStateCents: formData.discountPerStateCents,
         lastInstallmentDeadline: formData.lastInstallmentDeadline
           ? dateStringToTimestamp(formData.lastInstallmentDeadline)
           : Timestamp.now(),
@@ -147,7 +146,46 @@ const CampModal: React.FC<CampModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  const addStateDiscount = () => {
+    if (newStateToAdd && !formData.discountPerStateCents[newStateToAdd]) {
+      setFormData({
+        ...formData,
+        discountPerStateCents: {
+          ...formData.discountPerStateCents,
+          [newStateToAdd]: 0,
+        },
+      });
+      setNewStateToAdd("");
+    }
+  };
+
+  const removeStateDiscount = (state: CampState) => {
+    const newDiscounts = { ...formData.discountPerStateCents };
+    delete newDiscounts[state];
+    setFormData({
+      ...formData,
+      discountPerStateCents: newDiscounts,
+    });
+  };
+
+  const updateStateDiscount = (state: CampState, value: string) => {
+    setFormData({
+      ...formData,
+      discountPerStateCents: {
+        ...formData.discountPerStateCents,
+        [state]: dollarsToCents(value),
+      },
+    });
+  };
+
+  // Get available states that haven't been added yet
+  const availableStates = (Object.entries(campStateDisplayName) as [CampState, string][])
+    .filter(([key]) => isSameCountry(formData.state, key) && formData.discountPerStateCents[key] === undefined)
+    .map(([key, value]) => ({ key, value }));
+
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="modal-overlay">
@@ -314,7 +352,7 @@ const CampModal: React.FC<CampModalProps> = ({
           </div>
 
           <div className="form-group">
-            <label htmlFor="totalCost">Total Cost</label>
+            <label htmlFor="baseCost">Base Cost</label>
             <div className="money-input">
               <span className="currency-symbol">
                 {formData.currency === Currency.USD
@@ -324,14 +362,14 @@ const CampModal: React.FC<CampModalProps> = ({
                   : "A$"}
               </span>
               <input
-                id="totalCost"
+                id="baseCost"
                 type="number"
                 min="0"
-                value={centsToDollars(formData.totalCostCents)}
+                value={centsToDollars(formData.baseCostCents)}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    totalCostCents: dollarsToCents(e.target.value),
+                    baseCostCents: dollarsToCents(e.target.value),
                   })
                 }
                 required
@@ -339,57 +377,69 @@ const CampModal: React.FC<CampModalProps> = ({
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="outOfStateRebate">Out of State Rebate</label>
-              <div className="money-input">
-                <span className="currency-symbol">
-                  {formData.currency === Currency.USD
-                    ? "$"
-                    : formData.currency === Currency.EURO
-                    ? "€"
-                    : "A$"}
-                </span>
-                <input
-                  id="outOfStateRebate"
-                  type="number"
-                  min="0"
-                  value={centsToDollars(formData.outOfStateRebateCents)}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      outOfStateRebateCents: dollarsToCents(e.target.value),
-                    })
-                  }
-                  required
-                />
+          <div className="form-group">
+            <label>State Discounts</label>
+            <div className="discounts-section">
+              <div className="add-discount-section">
+                <select
+                  value={newStateToAdd}
+                  onChange={(e) => setNewStateToAdd(e.target.value as CampState)}
+                >
+                  <option value="">Select a state to add discount...</option>
+                  {availableStates.map(({ key, value }) => (
+                    <option key={key} value={key}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={addStateDiscount}
+                  disabled={!newStateToAdd}
+                  className="btn-secondary"
+                >
+                  Add Discount
+                </button>
               </div>
-            </div>
 
-            <div className="form-group">
-              <label htmlFor="inStateExtraCost">In State Extra Cost</label>
-              <div className="money-input">
-                <span className="currency-symbol">
-                  {formData.currency === Currency.USD
-                    ? "$"
-                    : formData.currency === Currency.EURO
-                    ? "€"
-                    : "A$"}
-                </span>
-                <input
-                  id="inStateExtraCost"
-                  type="number"
-                  min="0"
-                  value={centsToDollars(formData.inStateExtraCostCents)}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      inStateExtraCostCents: dollarsToCents(e.target.value),
-                    })
-                  }
-                  required
-                />
-              </div>
+              {Object.entries(formData.discountPerStateCents).length > 0 && (
+                <div className="discounts-list">
+                  {Object.entries(formData.discountPerStateCents).map(
+                    ([state, discountCents]) => (
+                      <div key={state} className="discount-item">
+                        <div className="discount-state">
+                          {campStateDisplayName[state as CampState]}
+                        </div>
+                        <div className="money-input">
+                          <span className="currency-symbol">
+                            {formData.currency === Currency.USD
+                              ? "$"
+                              : formData.currency === Currency.EURO
+                              ? "€"
+                              : "A$"}
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={centsToDollars(discountCents)}
+                            onChange={(e) =>
+                              updateStateDiscount(state as CampState, e.target.value)
+                            }
+                            required
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeStateDiscount(state as CampState)}
+                          className="btn-remove"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

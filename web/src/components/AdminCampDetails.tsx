@@ -1,16 +1,11 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { useIsAdmin, useStreamDocumentById, whereT } from "../firebaseHooks";
-import {
-  collection,
-  CollectionReference,
-  doc,
-  DocumentReference,
-} from "firebase/firestore";
-import { db } from "../firebase";
+import { collectionT, useIsAdmin, useStreamDocumentById, whereT } from "../firebaseHooks";
+import { doc } from "firebase/firestore";
 import {
   calculateParticipantCostCents,
+  CampState,
   DbCollections,
   type DbCamp,
   type DbCampParticipant,
@@ -34,7 +29,7 @@ export const AdminCampDetails: React.FC = () => {
 
   // Fetch user profile
   const profileData = useStreamDocumentById(
-    collection(db, DbCollections.profiles),
+    collectionT<DbProfile>(DbCollections.profiles),
     currentUser?.uid
   );
   const profile = profileData.value?.data() as DbProfile | undefined;
@@ -44,18 +39,12 @@ export const AdminCampDetails: React.FC = () => {
   }
 
   // Get camp details
-  const campRef = doc(db, DbCollections.camps, campId) as DocumentReference<
-    DbCamp,
-    DbCamp
-  >;
-  const campData = useStreamDocument<DbCamp, DbCamp>(campRef);
+  const campRef = doc(collectionT<DbCamp>(DbCollections.camps), campId);
+  const campData = useStreamDocument(campRef);
 
   // Get participants for this camp
   const participantsQuery = queryT(
-    collection(db, DbCollections.campParticipants) as CollectionReference<
-      DbCampParticipant,
-      DbCampParticipant
-    >,
+    collectionT<DbCampParticipant>(DbCollections.campParticipants),
     whereT("campId", "==", campId),
     orderByT("createdAt", "desc")
   );
@@ -152,17 +141,17 @@ export const AdminCampDetails: React.FC = () => {
                 {formatCurrency(camp.installmentCents)}
               </div>
               <div className="detail-item">
-                <strong>Total Cost:</strong>{" "}
-                {formatCurrency(camp.totalCostCents)}
+                <strong>Base Cost:</strong>{" "}
+                {formatCurrency(camp.baseCostCents)}
               </div>
-              <div className="detail-item">
-                <strong>Out of State Rebate:</strong>{" "}
-                {formatCurrency(camp.outOfStateRebateCents)}
-              </div>
-              <div className="detail-item">
-                <strong>In State Extra Cost:</strong>{" "}
-                {formatCurrency(camp.inStateExtraCostCents)}
-              </div>
+              {Object.entries(camp.discountPerStateCents).map(
+                ([state, discountCents]) => (
+                  <div className="detail-item" key={state}>
+                    <strong>{campStateDisplayName[state as CampState]} Discount:</strong>{" "}
+                    {formatCurrency(discountCents)}
+                  </div>
+                )
+              )}
             </div>
           </div>
         </div>

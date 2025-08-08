@@ -7,9 +7,8 @@ import {
   queryT,
   orderByT,
   useStreamDocumentById,
+  collectionT,
 } from "../firebaseHooks";
-import { collection } from "firebase/firestore";
-import { db } from "../firebase";
 import {
   DbCollections,
   type DbCamp,
@@ -31,13 +30,13 @@ export const AdminDashboard: React.FC = () => {
 
   // Fetch user profile
   const profileData = useStreamDocumentById(
-    collection(db, DbCollections.profiles),
+    collectionT<DbProfile>(DbCollections.profiles),
     currentUser?.uid
   );
   const profile = profileData.value?.data() as DbProfile | undefined;
 
   // Get camps from Firebase
-  const campsRef = collection(db, DbCollections.camps);
+  const campsRef = collectionT<DbCamp>(DbCollections.camps);
   const campsQuery = queryT(campsRef, orderByT("createdAt", "desc"));
   const camps = useFirebaseQuery(campsQuery);
 
@@ -129,8 +128,8 @@ export const AdminDashboard: React.FC = () => {
                           {camp.currency.toUpperCase()}
                         </div>
                         <div className="camp-pricing">
-                          <strong>Total Cost:</strong>{" "}
-                          {formatCurrency(camp.totalCostCents, camp.currency)}
+                          <strong>Base Cost:</strong>{" "}
+                          {formatCurrency(camp.baseCostCents, camp.currency)}
                         </div>
                         <div className="camp-dates">
                           <strong>Created:</strong> {formatDate(camp.createdAt)}

@@ -23,6 +23,7 @@ import {
   DbCollections,
   type DbCampParticipant,
   type DbCampParticipantInstallment,
+  type DbPermission,
   type DbStripeCheckoutSession,
 } from "shared";
 import { db } from "./firebase";
@@ -288,13 +289,19 @@ export function useStreamDocumentById<
   );
 }
 
+export function collectionT<T extends DocumentData>(
+  collectionName: DbCollections
+): CollectionReference<T, T> {
+  return collection(db, collectionName) as CollectionReference<T, T>;
+}
+
 // App specific hooks
 
 export function useIsAdmin() {
   const { currentUser } = useAuth();
   return (
     useStreamDocumentById(
-      collection(db, DbCollections.permissions),
+      collectionT<DbPermission>(DbCollections.permissions),
       currentUser?.uid
     ).value?.data()?.isAdmin ?? false
   );

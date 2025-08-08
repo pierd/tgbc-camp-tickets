@@ -48,9 +48,8 @@ export type DbCamp = {
   currency: Currency;
   initialInstallmentCents: number;
   installmentCents: number;
-  totalCostCents: number;
-  outOfStateRebateCents: number;
-  inStateExtraCostCents: number;
+  baseCostCents: number;
+  discountPerStateCents: Partial<Record<CampState, number>>;
 };
 
 export function calculateParticipantCostCents(
@@ -58,10 +57,7 @@ export function calculateParticipantCostCents(
   participantState: CampState
 ) {
   return (
-    campData.totalCostCents +
-    (campData.state === participantState
-      ? campData.inStateExtraCostCents
-      : -campData.outOfStateRebateCents)
+    campData.baseCostCents - (campData.discountPerStateCents[participantState] ?? 0)
   );
 }
 
