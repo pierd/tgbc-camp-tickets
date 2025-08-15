@@ -13,14 +13,15 @@
     "stripe:listen": "stripe listen --forward-to http://127.0.0.1:5001/tgbc-camp-tickets/australia-southeast2/handleStripeWebhook"
   },
   "devDependencies": {
-    "concurrently": "^9.2.0",
-    "firebase": "^11.10.0",
-    "eslint": "^9.30.1",
     "@eslint/js": "^9.30.1",
-    "globals": "^16.3.0",
-    "typescript-eslint": "^8.35.1",
+    "concurrently": "^9.2.0",
+    "eslint": "^9.30.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
-    "pnpm": "^10.14.0"
+    "firebase": "^11.10.0",
+    "firebase-tools": "^14.10.1",
+    "globals": "^16.3.0",
+    "pnpm": "^10.14.0",
+    "typescript-eslint": "^8.35.1"
   }
 }

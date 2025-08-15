@@ -26,6 +26,9 @@ importers:
       firebase:
         specifier: ^11.10.0
         version: 11.10.0
+      firebase-tools:
+        specifier: ^14.10.1
+        version: 14.10.1(@types/node@24.0.13)(encoding@0.1.13)
       globals:
         specifier: ^16.3.0
         version: 16.3.0
