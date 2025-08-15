@@ -102,6 +102,9 @@ export class DocumentReferenceT<T extends DocumentData> {
   get() {
     return this.ref.get();
   }
+  async data(): Promise<T | undefined> {
+    return (await this.ref.get()).data();
+  }
   create(data: WithFieldValue<T>) {
     return this.ref.create(data);
   }

@@ -30,7 +30,7 @@ setGlobalOptions({
   region: "australia-southeast2",
 });
 
-import { collection, db } from "./typedFirebase";
+import { collection, db, DocumentReferenceT } from "./typedFirebase";
 
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
@@ -75,9 +75,9 @@ async function initiatePayment(
     | { isInitialInstallment: true; location: string; promoCode: string }
     | { isInitialInstallment: false; installmentCount: number }
 ): Promise<PaymentResponse> {
+  logger.debug("Initiating payment", { userId, campId, returnUrl, email, options });
   const campRef = collection<DbCamp>(DbCollections.camps).doc(campId);
-  const camp = await campRef.get();
-  const campData = camp.data();
+  const campData = await campRef.data();
   if (!campData) {
     throw new HttpsError("not-found", "Camp not found");
   }
@@ -85,8 +85,7 @@ async function initiatePayment(
   const participantRef = collection<DbCampParticipant>(
     DbCollections.campParticipants
   ).doc(getCampParticipantId({ userId, campId }));
-  const participant = await participantRef.get();
-  const fetchedParticipantData = participant.data();
+  const fetchedParticipantData = await participantRef.data();
   let participantData: Omit<DbCampParticipant, "createdAt" | "updatedAt"> &
     WithFieldValue<{ createdAt: Timestamp; updatedAt: Timestamp }>;
   if (fetchedParticipantData !== undefined) {
@@ -102,27 +101,15 @@ async function initiatePayment(
       throw new HttpsError("invalid-argument", "User has not joined the camp");
     }
 
-    // calculate participant cost for this new participant
-    let promoCodeDiscountCents = 0;
-    if (options.promoCode) {
-      const promoCodeDoc = await campRef.collection<DbPromoCode>(DbCollections.promoCodes).doc(options.promoCode).get();
-      if (!promoCodeDoc.exists) {
-        logger.warn("Invalid promo code", options.promoCode);
-      }
-      promoCodeDiscountCents = promoCodeDoc.data()?.discountCents ?? 0;
-    }
-    const costCents = calculateParticipantCostCents(
-      campData,
+    const costCents = await getParticipantCostCents(
+      campRef,
       options.location,
-      promoCodeDiscountCents
+      options.promoCode
     );
     logger.info("Participant cost", {
       userId,
       campId,
       costCents,
-      promoCodeDiscountCents,
-      campData,
-      options,
     });
 
     participantData = {
@@ -324,8 +311,7 @@ async function fulfillCheckoutSession(
       const campRef = collection<DbCamp>(DbCollections.camps).doc(
         sessionData.campId
       );
-      const camp = await campRef.get();
-      const campData = camp.data();
+      const campData = await campRef.data();
       if (!campData) {
         throw new HttpsError("not-found", "Camp not found");
       }
@@ -344,6 +330,11 @@ async function fulfillCheckoutSession(
         })
       );
       if (sessionData.isInitialInstallment) {
+        const costCents = await getParticipantCostCents(
+          campRef,
+          sessionData.location,
+          sessionData.promoCode
+        );
         transaction.set(participantRef.ref, {
           createdAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
@@ -352,7 +343,7 @@ async function fulfillCheckoutSession(
           paidCents: sessionData.cents,
           location: sessionData.location,
           promoCode: sessionData.promoCode,
-          costCents: sessionData.cents,
+          costCents,
         });
       } else {
         transaction.update(participantRef.ref, {
@@ -380,4 +371,29 @@ async function fulfillCheckoutSession(
     }
     transaction.update(sessionRef.ref, updateData);
   });
+}
+
+async function getParticipantCostCents(
+  campRef: DocumentReferenceT<DbCamp>,
+  location: string,
+  promoCode: string
+): Promise<number> {
+  const campData = await campRef.data();
+  if (!campData) {
+    throw new HttpsError("not-found", "Camp not found");
+  }
+
+  let promoCodeDiscountCents = 0;
+  if (promoCode) {
+    const promoCodeDoc = await campRef.collection<DbPromoCode>(DbCollections.promoCodes).doc(promoCode).data();
+    if (!promoCodeDoc) {
+      logger.warn("Invalid promo code", promoCode);
+    }
+    promoCodeDiscountCents = promoCodeDoc?.discountCents ?? 0;
+  }
+  return calculateParticipantCostCents(
+    campData,
+    location,
+    promoCodeDiscountCents
+  );
 }
