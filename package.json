@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "deploy:firestore:rules": "firebase deploy --non-interactive --force --only firestore:rules",
     "dev": "concurrently -n emulator,shared,functions,web -c \"blue.bold,green.bold,yellow.bold,magenta.bold\" \"firebase emulators:start\" \"pnpm --filter shared dev\" \"pnpm --filter functions dev\" \"pnpm --filter web dev\"",
     "build": "pnpm --recursive build",
     "lint": "eslint . --ext .ts,.tsx",
