@@ -1,10 +1,11 @@
 import { Timestamp } from "@firebase/firestore-types";
-import { CampState } from "./states";
 
 export enum DbCollections {
   permissions = "permissions",
   profiles = "profiles",
   camps = "camps",
+  // sub-collection of `camps`
+  promoCodes = "promoCodes",
   campParticipants = "participants",
   // sub-collection of `campParticipants`
   installments = "installments",
@@ -24,7 +25,6 @@ export type DbProfile = {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   name: string;
-  defaultCampState: CampState;
 };
 
 export function isProfileComplete(profile: DbProfile | undefined) {
@@ -43,21 +43,33 @@ export type DbCamp = {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   name: string;
-  state: CampState;
   lastInstallmentDeadline: Timestamp;
   currency: Currency;
   initialInstallmentCents: number;
   installmentCents: number;
   baseCostCents: number;
-  discountPerStateCents: Partial<Record<CampState, number>>;
+  discountCentsPerLocation: Record<string, number>;
 };
+
+// keyed by `code`
+export type DbPromoCode = {
+  discountCents: number;
+};
+
+export function sanitizePromoCode(promoCode: string) {
+  return promoCode.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
 
 export function calculateParticipantCostCents(
   campData: DbCamp,
-  participantState: CampState
+  participantLocation: string,
+  promoCodeDiscountCents: number,
 ) {
-  return (
-    campData.baseCostCents - (campData.discountPerStateCents[participantState] ?? 0)
+  return Math.max(
+    0,
+    campData.baseCostCents -
+      (campData.discountCentsPerLocation[participantLocation] ?? 0) -
+      promoCodeDiscountCents,
   );
 }
 
@@ -66,8 +78,10 @@ export type DbCampParticipant = {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   userId: UserId;
-  state: CampState;
+  location: string;
+  promoCode: string;
   campId: CampId;
+  costCents: number;
   paidCents: number;
 };
 
@@ -101,7 +115,8 @@ export type DbStripeCheckoutSession = {
 } & (
   | {
       isInitialInstallment: true;
-      participantState: CampState;
+      location: string;
+      promoCode: string;
     }
   | {
       isInitialInstallment: false;

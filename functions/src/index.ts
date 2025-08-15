@@ -2,11 +2,11 @@ import { HttpsError, onCall, onRequest } from "firebase-functions/v2/https";
 import Stripe from "stripe";
 import {
   calculateParticipantCostCents,
-  CampState,
   DbCamp,
   DbCampParticipant,
   DbCampParticipantInstallment,
   DbCollections,
+  DbPromoCode,
   DbStripeCheckoutSession,
   getCampParticipantId,
   JoinCampRequest,
@@ -43,10 +43,11 @@ export const joinCamp = onCall<JoinCampRequest>(
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "User is not authenticated");
     }
-    const { campId, returnUrl, state, email } = request.data;
+    const { campId, returnUrl, location, email, promoCode } = request.data;
     return initiatePayment(request.auth.uid, campId, returnUrl, email, {
       isInitialInstallment: true,
-      state,
+      location,
+      promoCode,
     });
   }
 );
@@ -71,9 +72,9 @@ async function initiatePayment(
   returnUrl: string,
   email: string,
   options:
-    | { isInitialInstallment: true; state: CampState }
+    | { isInitialInstallment: true; location: string; promoCode: string }
     | { isInitialInstallment: false; installmentCount: number }
-) {
+): Promise<PaymentResponse> {
   const campRef = collection<DbCamp>(DbCollections.camps).doc(campId);
   const camp = await campRef.get();
   const campData = camp.data();
@@ -100,35 +101,78 @@ async function initiatePayment(
     if (!options.isInitialInstallment) {
       throw new HttpsError("invalid-argument", "User has not joined the camp");
     }
+
+    // calculate participant cost for this new participant
+    let promoCodeDiscountCents = 0;
+    if (options.promoCode) {
+      const promoCodeDoc = await campRef.collection<DbPromoCode>(DbCollections.promoCodes).doc(options.promoCode).get();
+      if (!promoCodeDoc.exists) {
+        logger.warn("Invalid promo code", options.promoCode);
+      }
+      promoCodeDiscountCents = promoCodeDoc.data()?.discountCents ?? 0;
+    }
+    const costCents = calculateParticipantCostCents(
+      campData,
+      options.location,
+      promoCodeDiscountCents
+    );
+    logger.info("Participant cost", {
+      userId,
+      campId,
+      costCents,
+      promoCodeDiscountCents,
+      campData,
+      options,
+    });
+
     participantData = {
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
       userId,
       campId,
       paidCents: 0,
-      state: options.state,
+      location: options.location,
+      promoCode: options.promoCode,
+      costCents,
     };
   }
 
-  const participantCostCents = calculateParticipantCostCents(
-    campData,
-    participantData.state
-  );
-  if (participantData.paidCents >= participantCostCents) {
-    throw new HttpsError(
-      "invalid-argument",
-      "User has already paid for the camp"
-    );
+  if (participantData.paidCents === participantData.costCents) {
+    // already paid in full
+    if (options.isInitialInstallment) {
+      // participant doesn't have to pay anything - just store the participant
+      await participantRef.set(participantData);
+    }
+    return { paymentNeeded: false };
+  }
+
+  if (participantData.paidCents >= participantData.costCents) {
+    logger.error("User has already paid for the camp", {
+      userId,
+      campId,
+      participantData,
+      campData,
+      options,
+    });
+    return { paymentNeeded: false };
   }
 
   const amountCents = options.isInitialInstallment
-    ? campData.initialInstallmentCents
-    : campData.installmentCents * options.installmentCount;
-  if (participantData.paidCents + amountCents > participantCostCents) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Requested amount exceeds participant cost"
-    );
+    ? Math.min(campData.initialInstallmentCents, participantData.costCents)
+    : Math.min(
+        campData.installmentCents * options.installmentCount,
+        participantData.costCents - participantData.paidCents
+      );
+  if (amountCents <= 0) {
+    logger.error("Requested amount is not positive", {
+      userId,
+      campId,
+      amountCents,
+      participantData,
+      campData,
+      options,
+    });
+    return { paymentNeeded: false };
   }
 
   if (!STRIPE_SECRET_KEY) {
@@ -179,17 +223,18 @@ async function initiatePayment(
       ...(options.isInitialInstallment
         ? {
             isInitialInstallment: true,
-            participantState: participantData.state,
+            location: participantData.location,
+            promoCode: participantData.promoCode,
           }
         : {
             isInitialInstallment: false,
           }),
     });
 
-  const response: PaymentResponse = {
+  return {
+    paymentNeeded: true,
     redirectUrl: session.url || cancelUrl,
   };
-  return response;
 }
 
 export const handleStripeWebhook = onRequest(
@@ -305,7 +350,9 @@ async function fulfillCheckoutSession(
           userId: sessionData.userId,
           campId: sessionData.campId,
           paidCents: sessionData.cents,
-          state: sessionData.participantState,
+          location: sessionData.location,
+          promoCode: sessionData.promoCode,
+          costCents: sessionData.cents,
         });
       } else {
         transaction.update(participantRef.ref, {

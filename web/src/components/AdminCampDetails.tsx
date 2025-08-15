@@ -3,22 +3,21 @@ import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { collectionT, useIsAdmin, useStreamDocumentById, whereT } from "../firebaseHooks";
 import {
-  calculateParticipantCostCents,
-  CampState,
   DbCollections,
   type DbCamp,
   type DbCampParticipant,
   type DbProfile,
+  type DbPromoCode,
 } from "shared";
 import {
   useFirebaseQuery,
   queryT,
   orderByT,
 } from "../firebaseHooks";
-import { campStateDisplayName } from "shared";
 import CampModal from "./CampModal";
 import { ParticipantProfile } from "./ParticipantProfile";
 import { formatDate } from "../utils";
+import { collection, type CollectionReference } from "firebase/firestore";
 
 export const AdminCampDetails: React.FC = () => {
   const { campId } = useParams<{ campId: string }>();
@@ -33,9 +32,15 @@ export const AdminCampDetails: React.FC = () => {
   );
   const profile = profileData.value?.data() as DbProfile | undefined;
 
-
   // Get camp details
   const campData = useStreamDocumentById(collectionT<DbCamp>(DbCollections.camps), campId);
+  const campRef = campData.value?.ref;
+
+  // Get promo codes for this camp
+  const promoCodesQuery = campId && campRef ? queryT(
+    collection(campRef, DbCollections.promoCodes) as CollectionReference<DbPromoCode, DbPromoCode>,
+  ) : undefined;
+  const promoCodes = useFirebaseQuery(promoCodesQuery);
 
   // Get participants for this camp
   const participantsQuery = campId ? queryT(
@@ -107,9 +112,6 @@ export const AdminCampDetails: React.FC = () => {
                 <strong>Name:</strong> {camp.name}
               </div>
               <div className="detail-item">
-                <strong>State:</strong> {campStateDisplayName[camp.state]}
-              </div>
-              <div className="detail-item">
                 <strong>Currency:</strong> {camp.currency.toUpperCase()}
               </div>
               <div className="detail-item">
@@ -138,14 +140,26 @@ export const AdminCampDetails: React.FC = () => {
                 <strong>Base Cost:</strong>{" "}
                 {formatCurrency(camp.baseCostCents)}
               </div>
-              {Object.entries(camp.discountPerStateCents).map(
-                ([state, discountCents]) => (
-                  <div className="detail-item" key={state}>
-                    <strong>{campStateDisplayName[state as CampState]} Discount:</strong>{" "}
+              {Object.entries(camp.discountCentsPerLocation).map(
+                ([location, discountCents]) => (
+                  <div className="detail-item" key={location}>
+                    <strong>{location} Discount:</strong>{" "}
                     {formatCurrency(discountCents)}
                   </div>
                 )
               )}
+              <div className="detail-item">
+                <strong>Promo Codes:</strong>
+                {promoCodes.map((promoCodeDoc) => {
+                  const promoCode = promoCodeDoc.data();
+                  return (
+                    <div key={promoCodeDoc.id} className="promo-code-item">
+                      <code className="promo-code">{promoCodeDoc.id}</code>
+                      <span className="promo-code-discount">{formatCurrency(promoCode.discountCents)}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -164,13 +178,9 @@ export const AdminCampDetails: React.FC = () => {
                       <div className="participant-id">
                         <strong>User ID:</strong> {participantDoc.id}
                       </div>
-                      <div className="participant-state">
-                        <strong>State:</strong>{" "}
-                        {
-                          campStateDisplayName[
-                            participant.state as keyof typeof campStateDisplayName
-                          ]
-                        }
+                      <div className="participant-location">
+                        <strong>Location:</strong>{" "}
+                        {participant.location}
                       </div>
                       <div className="participant-joined">
                         <strong>Joined:</strong>{" "}
@@ -179,8 +189,7 @@ export const AdminCampDetails: React.FC = () => {
                       <div className="participant-paid">
                         <strong>Paid:</strong>{" "}
                         {formatCurrency(participant.paidCents)}
-                        {participant.paidCents ===
-                        calculateParticipantCostCents(camp, participant.state)
+                        {participant.paidCents >= participant.costCents
                           ? " (Fully Paid)"
                           : ""}
                       </div>

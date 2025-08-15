@@ -12,9 +12,7 @@ import {
 import {
   DbCollections,
   type DbCamp,
-  CampState,
   Currency,
-  campStateDisplayName,
   type DbProfile,
 } from "shared";
 import CampModal from "./CampModal";
@@ -114,11 +112,6 @@ export const AdminDashboard: React.FC = () => {
                     <div className="camp-info">
                       <h3 className="camp-name">{camp.name}</h3>
                       <div className="camp-details">
-                        <div className="camp-location">
-                          <strong>Location:</strong>{" "}
-                          {campStateDisplayName[camp.state as CampState] ||
-                            camp.state}
-                        </div>
                         <div className="camp-currency">
                           <strong>Currency:</strong>{" "}
                           {camp.currency.toUpperCase()}

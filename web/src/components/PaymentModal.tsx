@@ -3,7 +3,6 @@ import {
   type DbCamp,
   type DbCampParticipant,
   Currency,
-  calculateParticipantCostCents,
 } from "shared";
 
 interface PaymentModalProps {
@@ -28,7 +27,7 @@ export default function PaymentModal({
     return null;
   }
 
-  const totalCostCents = calculateParticipantCostCents(camp, participant.state);
+  const totalCostCents = participant.costCents;
   const remainingCents = totalCostCents - participant.paidCents;
   const maxInstallments = Math.ceil(remainingCents / camp.installmentCents);
   const installmentAmountCents = Math.min(

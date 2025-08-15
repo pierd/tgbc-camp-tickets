@@ -1,7 +1,7 @@
 import React from "react";
 import { doc, DocumentReference } from "firebase/firestore";
 import { db } from "../firebase";
-import { campStateDisplayName, DbCollections, type DbProfile } from "shared";
+import { DbCollections, type DbProfile } from "shared";
 import { useStreamDocument } from "../firebaseHooks";
 
 interface ParticipantProfileProps {
@@ -37,10 +37,6 @@ export const ParticipantProfile: React.FC<ParticipantProfileProps> = ({
       <div className="profile-info">
         <div className="profile-name">
           <strong>Name:</strong> {profile.name}
-        </div>
-        <div className="profile-default-state">
-          <strong>Default State:</strong>{" "}
-          {campStateDisplayName[profile.defaultCampState]}
         </div>
       </div>
     </div>

@@ -4,8 +4,6 @@ import { db } from "../firebase";
 import {
   DbCollections,
   type DbProfile,
-  CampState,
-  campStateDisplayName,
 } from "shared";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -20,10 +18,6 @@ export default function ProfileModal({
 }: ProfileModalProps) {
   const { currentUser } = useAuth();
   const [name, setName] = useState("");
-  const [country, setCountry] = useState("Australia");
-  const [defaultCampState, setDefaultCampState] = useState<CampState>(
-    CampState.auNSW
-  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -46,7 +40,6 @@ export default function ProfileModal({
 
       const profileData: Omit<DbProfile, "createdAt" | "updatedAt"> = {
         name: name.trim(),
-        defaultCampState,
       };
 
       await setDoc(doc(db, DbCollections.profiles, currentUser.uid), {
@@ -90,49 +83,6 @@ export default function ProfileModal({
               required
               disabled={loading}
             />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="country">Country</label>
-            <select
-              id="country"
-              value={country}
-              onChange={(e) => {
-                const newCountry = e.target.value;
-                const newState =
-                  newCountry === "Australia" ? CampState.auNSW : CampState.usAK;
-                setCountry(newCountry);
-                setDefaultCampState(newState);
-              }}
-              disabled={loading}
-            >
-              <option value="Australia">Australia</option>
-              <option value="US">United States</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="defaultCampState">State/Province</label>
-            <select
-              id="defaultCampState"
-              value={defaultCampState}
-              onChange={(e) => setDefaultCampState(e.target.value as CampState)}
-              disabled={loading}
-            >
-              {Object.entries(campStateDisplayName)
-                .filter(([key]) => {
-                  if (country === "Australia") {
-                    return key.startsWith("au");
-                  } else {
-                    return key.startsWith("us");
-                  }
-                })
-                .map(([key, displayName]) => (
-                  <option key={key} value={key}>
-                    {displayName}
-                  </option>
-                ))}
-            </select>
           </div>
 
           <div className="form-actions">

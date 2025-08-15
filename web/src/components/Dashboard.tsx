@@ -16,13 +16,10 @@ import {
   type DbCampParticipant,
   type DbStripeCheckoutSession,
   type DbProfile,
-  CampState,
   Currency,
-  campStateDisplayName,
   JoinCampRequest,
   PayInstallmentRequest,
   PaymentResponse,
-  calculateParticipantCostCents,
   isProfileComplete,
   type CampId,
 } from "shared";
@@ -302,7 +299,7 @@ export function Dashboard() {
 
   const campTicketsUrl = "https://www.toughguybookclub.com/camp_tickets_iframe";
 
-  const handleJoinCamp = async (campId: string, state: CampState) => {
+  const handleJoinCamp = async ({campId, location, promoCode}: {campId: string; location: string; promoCode: string}) => {
     try {
       const returnUrl = window.top !== window.self
         ? campTicketsUrl
@@ -312,10 +309,12 @@ export function Dashboard() {
       if (!email) {
         throw new Error("Email is required");
       }
-      const result = await joinCamp({ campId, state, returnUrl, email });
-      const { redirectUrl } = result.data;
-      // Open Stripe checkout in a new window/tab
-      window.open(redirectUrl, '_blank', 'noopener,noreferrer');
+      const result = await joinCamp({ campId, location, promoCode, returnUrl, email });
+      if (result.data.paymentNeeded) {
+        const { redirectUrl } = result.data;
+        // Open Stripe checkout in a new window/tab
+        window.open(redirectUrl, '_blank', 'noopener,noreferrer');
+      }
     } catch (error) {
       console.error("Failed to join camp:", error);
       throw error;
@@ -341,9 +340,11 @@ export function Dashboard() {
         installmentCount,
         email,
       });
-      const { redirectUrl } = result.data;
-      // Open Stripe checkout in a new window/tab
-      window.open(redirectUrl, '_blank', 'noopener,noreferrer');
+      if (result.data.paymentNeeded) {
+        const { redirectUrl } = result.data;
+        // Open Stripe checkout in a new window/tab
+        window.open(redirectUrl, '_blank', 'noopener,noreferrer');
+      }
     } catch (error) {
       console.error("Failed to pay installment:", error);
       throw error;
@@ -365,9 +366,10 @@ export function Dashboard() {
 
     // Check if camp is fully paid
     const isFullyPaid = userParticipation
-      ? userParticipation.paidCents >=
-        calculateParticipantCostCents(camp, userParticipation.state)
+      ? userParticipation.paidCents >= userParticipation.costCents
       : false;
+
+    console.log("isFullyPaid", isFullyPaid, userParticipation);
 
     return (
       <div
@@ -379,24 +381,20 @@ export function Dashboard() {
         <div className="camp-info">
           <h3 className="camp-name">{camp.name}</h3>
           <div className="camp-details">
-            <div className="camp-location">
-              <strong>Location:</strong>{" "}
-              {campStateDisplayName[camp.state as CampState] || camp.state}
-            </div>
             <div className="camp-currency">
               <strong>Currency:</strong> {camp.currency.toUpperCase()}
             </div>
             <div className="camp-pricing">
               <strong>Base Cost:</strong>{" "}
               {formatCurrency(camp.baseCostCents, camp.currency)}
-              {Object.entries(camp.discountPerStateCents).map(([state, discountCents]) =>
+              {/* {Object.entries(camp.discountCentsPerLocation).map(([location, discountCents]) =>
                 discountCents > 0 ? (
-                  <div className="camp-discount" key={state}>
-                    <strong>{campStateDisplayName[state as CampState]} Discount:</strong>{" "}
+                  <div className="camp-discount" key={location}>
+                    <strong>{location} Discount:</strong>{" "}
                     {formatCurrency(discountCents, camp.currency)}
                   </div>
                 ) : null
-              )}
+              )} */}
             </div>
             <div className="camp-dates">
               <strong>Created:</strong> {formatDate(camp.createdAt)}
@@ -424,32 +422,30 @@ export function Dashboard() {
               Join Camp
             </button>
           )}
-          {type === "participating" && !isFullyPaid && (
+          {type === "participating" && (
             <>
-              {userParticipation && (
+              {userParticipation && userParticipation.costCents > 0 && (
                 <div className="participation-details">
                   <div className="payment-summary">
                     <strong>Paid:</strong>{" "}
                     {formatCurrency(userParticipation.paidCents, camp.currency)}
                   </div>
                   {renderInstallmentBoxes(camp, userParticipation)}
-                  <div className="remaining-payment">
+                  {!isFullyPaid && <div className="remaining-payment">
                     <strong>Remaining:</strong>{" "}
                     {formatCurrency(
-                      calculateParticipantCostCents(
-                        camp,
-                        userParticipation.state
-                      ) - userParticipation.paidCents,
+                      userParticipation.costCents - userParticipation.paidCents,
                       camp.currency
                     )}
-                  </div>
+                  </div>}
                 </div>
               )}
               <button
                 className="btn-primary pay-btn"
+                disabled={isFullyPaid}
                 onClick={() => setPaymentModalCamp(camp)}
               >
-                Pay Installment
+                {isFullyPaid ? "Fully Paid" : "Pay Installment"}
               </button>
             </>
           )}
@@ -552,7 +548,6 @@ export function Dashboard() {
           onClose={() => setJoinModalCamp(null)}
           camp={joinModalCamp}
           onJoin={handleJoinCamp}
-          userProfile={profile}
         />
       )}
 

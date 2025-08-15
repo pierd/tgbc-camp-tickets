@@ -4,17 +4,30 @@ import {
   updateDoc,
   doc,
   Timestamp,
+  collection,
+  CollectionReference,
+  setDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import type { Timestamp as TimestampType } from "@firebase/firestore-types";
 import {
   DbCollections,
   type DbCamp,
-  CampState,
   Currency,
-  campStateDisplayName,
-  isSameCountry,
+  type DbPromoCode,
+  sanitizePromoCode,
 } from "shared";
-import { collectionT } from "../firebaseHooks";
+import { collectionT, queryT, useFirebaseQuery } from "../firebaseHooks";
+
+function CurrencySymbol({ currency }: { currency: Currency }) {
+  return <span className="currency-symbol">
+    {currency === Currency.USD
+      ? "$"
+      : currency === Currency.EURO
+      ? "€"
+      : "A$"}
+  </span>
+}
 
 interface CampModalProps {
   isOpen: boolean;
@@ -29,19 +42,23 @@ const CampModal: React.FC<CampModalProps> = ({
   mode,
   campToEdit,
 }) => {
+  const campRef = campToEdit ? doc(collectionT<DbCamp>(DbCollections.camps), campToEdit.id) : undefined;
+  const promoCodesRef = campRef ? collection(campRef, DbCollections.promoCodes) as CollectionReference<DbPromoCode, DbPromoCode> : undefined;
+  const promoCodes = useFirebaseQuery(promoCodesRef ? queryT(promoCodesRef) : undefined);
+
   const [formData, setFormData] = useState({
     name: "",
-    country: "Australia",
-    state: CampState.auNSW,
     currency: Currency.AUD,
     initialInstallmentCents: 0,
     installmentCents: 0,
     baseCostCents: 0,
-    discountPerStateCents: {} as Partial<Record<CampState, number>>,
+    discountCentsPerLocation: {} as Record<string, number>,
     lastInstallmentDeadline: "",
+    promoCodeDiscountCents: {} as Record<string, number>,
   });
 
-  const [newStateToAdd, setNewStateToAdd] = useState<CampState | "">("");
+  const [newLocationToAdd, setNewLocationToAdd] = useState<string | "">("");
+  const [newPromoCodeToAdd, setNewPromoCodeToAdd] = useState<string | "">("");
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Helper function to convert integer dollars to cents
@@ -75,31 +92,17 @@ const CampModal: React.FC<CampModalProps> = ({
     const errors: string[] = [];
 
     // Check if any discount is bigger than base cost
-    for (const [state, discountCents] of (Object.entries(formData.discountPerStateCents) as [CampState, number][])) {
+    for (const [location, discountCents] of (Object.entries(formData.discountCentsPerLocation) as [string, number][])) {
       if (discountCents > formData.baseCostCents) {
-        errors.push(`Discount for ${campStateDisplayName[state]} cannot be larger than base cost`);
+        errors.push(`Discount for "${location}" cannot be larger than base cost`);
       }
     }
 
-    // Find the biggest discount
-    const biggestDiscount = Math.max(...Object.values(formData.discountPerStateCents), 0);
-
-    // Check if initial installment is bigger than base cost minus biggest discount
-    const maxInitialInstallment = formData.baseCostCents - biggestDiscount;
-    if (formData.initialInstallmentCents > maxInitialInstallment) {
-      errors.push(`Initial installment cannot be larger than base cost minus biggest discount (${centsToDollars(maxInitialInstallment)})`);
-    }
-
-    // Check if installment amount is valid (non-negative)
-    if (formData.installmentCents < 0) {
-      errors.push("Installment amount cannot be negative");
-    } else {
-      // For every discount: (base minus discount minus initial installment) must be divisible by installment amount
-      for (const [state, discountCents] of (Object.entries(formData.discountPerStateCents) as [CampState, number][])) {
-        const remainingAmount = formData.baseCostCents - discountCents - formData.initialInstallmentCents;
-        if (remainingAmount >= 0 && remainingAmount % formData.installmentCents !== 0) {
-          errors.push(`For ${campStateDisplayName[state]}: remaining amount after discount and initial installment (${centsToDollars(remainingAmount)}) must be divisible by installment amount (${centsToDollars(formData.installmentCents)})`);
-        }
+    // For every discount: (base minus discount minus initial installment) must be divisible by installment amount
+    for (const [location, discountCents] of (Object.entries(formData.discountCentsPerLocation) as [string, number][])) {
+      const remainingAmount = formData.baseCostCents - discountCents - formData.initialInstallmentCents;
+      if (remainingAmount >= 0 && remainingAmount % formData.installmentCents !== 0) {
+        errors.push(`For "${location}": remaining amount after discount and initial installment (${centsToDollars(remainingAmount)}) must be divisible by installment amount (${centsToDollars(formData.installmentCents)})`);
       }
     }
 
@@ -115,35 +118,38 @@ const CampModal: React.FC<CampModalProps> = ({
   // Initialize form data when editing
   useEffect(() => {
     if (mode === "edit" && campToEdit) {
-      const country = campToEdit.state.startsWith("au") ? "Australia" : "US";
       setFormData({
         name: campToEdit.name,
-        country,
-        state: campToEdit.state,
         currency: campToEdit.currency,
         initialInstallmentCents: campToEdit.initialInstallmentCents,
         installmentCents: campToEdit.installmentCents,
         baseCostCents: campToEdit.baseCostCents,
-        discountPerStateCents: campToEdit.discountPerStateCents,
+        discountCentsPerLocation: campToEdit.discountCentsPerLocation,
         lastInstallmentDeadline: timestampToDateString(
           campToEdit.lastInstallmentDeadline
         ),
+        promoCodeDiscountCents: promoCodes.reduce((acc, promoCodeDoc) => {
+          const promoCode = promoCodeDoc.data();
+          return {
+            ...acc,
+            [promoCodeDoc.id]: promoCode.discountCents,
+          };
+        }, {} as Record<string, number>),
       });
-    } else {
+    } else if (mode === "create") {
       // Reset form for create mode
       setFormData({
         name: "",
-        country: "Australia",
-        state: CampState.auNSW,
         currency: Currency.AUD,
         initialInstallmentCents: 0,
         installmentCents: 0,
         baseCostCents: 0,
-        discountPerStateCents: {},
+        discountCentsPerLocation: {},
         lastInstallmentDeadline: "",
+        promoCodeDiscountCents: {},
       });
     }
-  }, [mode, campToEdit]);
+  }, [mode, campToEdit, promoCodes]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,31 +164,52 @@ const CampModal: React.FC<CampModalProps> = ({
     try {
       const campData = {
         name: formData.name,
-        state: formData.state,
         currency: formData.currency,
         initialInstallmentCents: formData.initialInstallmentCents,
         installmentCents: formData.installmentCents,
         baseCostCents: formData.baseCostCents,
-        discountPerStateCents: formData.discountPerStateCents,
+        discountCentsPerLocation: formData.discountCentsPerLocation,
         lastInstallmentDeadline: formData.lastInstallmentDeadline
           ? dateStringToTimestamp(formData.lastInstallmentDeadline)
           : Timestamp.now(),
       };
 
+      const promises: Promise<void>[] = [];
       if (mode === "create") {
         const now = Timestamp.now();
-        await addDoc(collectionT<DbCamp>(DbCollections.camps), {
+        const campRef = await addDoc(collectionT<DbCamp>(DbCollections.camps), {
           ...campData,
           createdAt: now,
           updatedAt: now,
         });
-      } else if (mode === "edit" && campToEdit) {
-        const campRef = doc(collectionT<DbCamp>(DbCollections.camps), campToEdit.id);
+        // add promo codes
+        const promoCodesRef = collection(campRef, DbCollections.promoCodes) as CollectionReference<DbPromoCode, DbPromoCode>;
+        for (const [promoCodeId, discountCents] of Object.entries(formData.promoCodeDiscountCents)) {
+          promises.push(setDoc(doc(promoCodesRef, promoCodeId), { discountCents }));
+        }
+        // delete removed promo codes
+        promoCodes.forEach((promoCodeDoc) => {
+          if (!formData.promoCodeDiscountCents[promoCodeDoc.id]) {
+            promises.push(deleteDoc(doc(promoCodesRef, promoCodeDoc.id)));
+          }
+        });
+      } else if (mode === "edit" && campToEdit && campRef && promoCodesRef) {
         await updateDoc(campRef, {
           ...campData,
           updatedAt: Timestamp.now(),
         });
+        // add promo codes
+        for (const [promoCodeId, discountCents] of Object.entries(formData.promoCodeDiscountCents)) {
+          promises.push(setDoc(doc(promoCodesRef, promoCodeId), { discountCents }));
+        }
+        // delete removed promo codes
+        promoCodes.forEach((promoCodeDoc) => {
+          if (!formData.promoCodeDiscountCents[promoCodeDoc.id]) {
+            promises.push(deleteDoc(doc(promoCodesRef, promoCodeDoc.id)));
+          }
+        });
       }
+      await Promise.all(promises);
 
       onClose();
     } catch (error) {
@@ -198,42 +225,69 @@ const CampModal: React.FC<CampModalProps> = ({
     }
   };
 
-  const addStateDiscount = () => {
-    if (newStateToAdd && !formData.discountPerStateCents[newStateToAdd]) {
+  const addLocationDiscount = () => {
+    if (newLocationToAdd && !formData.discountCentsPerLocation[newLocationToAdd]) {
       setFormData({
         ...formData,
-        discountPerStateCents: {
-          ...formData.discountPerStateCents,
-          [newStateToAdd]: 0,
+        discountCentsPerLocation: {
+          ...formData.discountCentsPerLocation,
+          [newLocationToAdd]: 0,
         },
       });
-      setNewStateToAdd("");
+      setNewLocationToAdd("");
     }
   };
 
-  const removeStateDiscount = (state: CampState) => {
-    const newDiscounts = { ...formData.discountPerStateCents };
-    delete newDiscounts[state];
+  const removeLocationDiscount = (location: string) => {
+    const newDiscounts = { ...formData.discountCentsPerLocation };
+    delete newDiscounts[location];
     setFormData({
       ...formData,
-      discountPerStateCents: newDiscounts,
+      discountCentsPerLocation: newDiscounts,
     });
   };
 
-  const updateStateDiscount = (state: CampState, value: string) => {
+  const updateLocationDiscount = (location: string, value: string) => {
     setFormData({
       ...formData,
-      discountPerStateCents: {
-        ...formData.discountPerStateCents,
-        [state]: dollarsToCents(value),
+      discountCentsPerLocation: {
+        ...formData.discountCentsPerLocation,
+        [location]: dollarsToCents(value),
       },
     });
   };
 
-  // Get available states that haven't been added yet
-  const availableStates = (Object.entries(campStateDisplayName) as [CampState, string][])
-    .filter(([key]) => isSameCountry(formData.state, key) && formData.discountPerStateCents[key] === undefined)
-    .map(([key, value]) => ({ key, value }));
+  const addPromoCodeDiscount = () => {
+    if (newPromoCodeToAdd && !formData.promoCodeDiscountCents[newPromoCodeToAdd]) {
+      setFormData({
+        ...formData,
+        promoCodeDiscountCents: {
+          ...formData.promoCodeDiscountCents,
+          [newPromoCodeToAdd]: 0,
+        },
+      });
+      setNewPromoCodeToAdd("");
+    }
+  };
+
+  const removePromoCodeDiscount = (promoCodeId: string) => {
+    const newDiscounts = { ...formData.promoCodeDiscountCents };
+    delete newDiscounts[promoCodeId];
+    setFormData({
+      ...formData,
+      promoCodeDiscountCents: newDiscounts,
+    });
+  };
+
+  const updatePromoCodeDiscount = (promoCodeId: string, value: string) => {
+    setFormData({
+      ...formData,
+      promoCodeDiscountCents: {
+        ...formData.promoCodeDiscountCents,
+        [promoCodeId]: dollarsToCents(value),
+      },
+    });
+  };
 
   if (!isOpen) {
     return null;
@@ -270,56 +324,6 @@ const CampModal: React.FC<CampModalProps> = ({
               }
               required
             />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="country">Country</label>
-            <select
-              id="country"
-              value={formData.country}
-              onChange={(e) => {
-                const newCountry = e.target.value;
-                const newState =
-                  newCountry === "Australia" ? CampState.auNSW : CampState.usAK;
-                setFormData({
-                  ...formData,
-                  country: newCountry,
-                  state: newState,
-                  currency:
-                    newCountry === "Australia" ? Currency.AUD : Currency.USD,
-                });
-              }}
-              required
-            >
-              <option value="Australia">Australia</option>
-              <option value="US">United States</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="state">State</label>
-            <select
-              id="state"
-              value={formData.state}
-              onChange={(e) =>
-                setFormData({ ...formData, state: e.target.value as CampState })
-              }
-              required
-            >
-              {Object.entries(campStateDisplayName)
-                .filter(([key]) => {
-                  if (formData.country === "Australia") {
-                    return key.startsWith("au");
-                  } else {
-                    return key.startsWith("us");
-                  }
-                })
-                .map(([key, value]) => (
-                  <option key={key} value={key}>
-                    {value}
-                  </option>
-                ))}
-            </select>
           </div>
 
           <div className="form-group">
@@ -363,13 +367,7 @@ const CampModal: React.FC<CampModalProps> = ({
             <div className="form-group">
               <label htmlFor="initialInstallment">Initial Installment</label>
               <div className="money-input">
-                <span className="currency-symbol">
-                  {formData.currency === Currency.USD
-                    ? "$"
-                    : formData.currency === Currency.EURO
-                    ? "€"
-                    : "A$"}
-                </span>
+                <CurrencySymbol currency={formData.currency} />
                 <input
                   id="initialInstallment"
                   type="number"
@@ -384,23 +382,12 @@ const CampModal: React.FC<CampModalProps> = ({
                   required
                 />
               </div>
-              {formData.baseCostCents > 0 && (
-                <div className="form-help">
-                  Max: {centsToDollars(Math.max(0, formData.baseCostCents - Math.max(...Object.values(formData.discountPerStateCents), 0)))}
-                </div>
-              )}
             </div>
 
             <div className="form-group">
               <label htmlFor="installmentAmount">Installment Amount</label>
               <div className="money-input">
-                <span className="currency-symbol">
-                  {formData.currency === Currency.USD
-                    ? "$"
-                    : formData.currency === Currency.EURO
-                    ? "€"
-                    : "A$"}
-                </span>
+                <CurrencySymbol currency={formData.currency} />
                 <input
                   id="installmentAmount"
                   type="number"
@@ -421,13 +408,7 @@ const CampModal: React.FC<CampModalProps> = ({
           <div className="form-group">
             <label htmlFor="baseCost">Base Cost</label>
             <div className="money-input">
-              <span className="currency-symbol">
-                {formData.currency === Currency.USD
-                  ? "$"
-                  : formData.currency === Currency.EURO
-                  ? "€"
-                  : "A$"}
-              </span>
+              <CurrencySymbol currency={formData.currency} />
               <input
                 id="baseCost"
                 type="number"
@@ -445,59 +426,101 @@ const CampModal: React.FC<CampModalProps> = ({
           </div>
 
           <div className="form-group">
-            <label>State Discounts</label>
+            <label>Location Discounts</label>
             <div className="discounts-section">
               <div className="add-discount-section">
-                <select
-                  value={newStateToAdd}
-                  onChange={(e) => setNewStateToAdd(e.target.value as CampState)}
-                >
-                  <option value="">Select a state to add discount...</option>
-                  {availableStates.map(({ key, value }) => (
-                    <option key={key} value={key}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
+                <input
+                  type="text"
+                  value={newLocationToAdd}
+                  onChange={(e) => setNewLocationToAdd(e.target.value)}
+                />
                 <button
                   type="button"
-                  onClick={addStateDiscount}
-                  disabled={!newStateToAdd}
+                  onClick={addLocationDiscount}
+                  disabled={!newLocationToAdd}
                   className="btn-secondary"
                 >
                   Add Discount
                 </button>
               </div>
 
-              {Object.entries(formData.discountPerStateCents).length > 0 && (
+              {Object.entries(formData.discountCentsPerLocation).length > 0 && (
                 <div className="discounts-list">
-                  {Object.entries(formData.discountPerStateCents).map(
-                    ([state, discountCents]) => (
-                      <div key={state} className="discount-item">
-                        <div className="discount-state">
-                          {campStateDisplayName[state as CampState]}
+                  {Object.entries(formData.discountCentsPerLocation).map(
+                    ([location, discountCents]) => (
+                      <div key={location} className="discount-item-row">
+                        <div className="discount-location">
+                          {location}
                         </div>
                         <div className="money-input">
-                          <span className="currency-symbol">
-                            {formData.currency === Currency.USD
-                              ? "$"
-                              : formData.currency === Currency.EURO
-                              ? "€"
-                              : "A$"}
-                          </span>
+                          <CurrencySymbol currency={formData.currency} />
                           <input
                             type="number"
                             min="0"
                             value={centsToDollars(discountCents)}
                             onChange={(e) =>
-                              updateStateDiscount(state as CampState, e.target.value)
+                              updateLocationDiscount(location, e.target.value)
                             }
                             required
                           />
                         </div>
                         <button
                           type="button"
-                          onClick={() => removeStateDiscount(state as CampState)}
+                          onClick={() => removeLocationDiscount(location)}
+                          className="btn-remove"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Promo Code Discounts</label>
+            <div className="discounts-section">
+              <div className="add-discount-section">
+                <input
+                  type="text"
+                  value={newPromoCodeToAdd}
+                  onChange={(e) => setNewPromoCodeToAdd(sanitizePromoCode(e.target.value))}
+                />
+                <button
+                  type="button"
+                  onClick={addPromoCodeDiscount}
+                  disabled={!newPromoCodeToAdd}
+                  className="btn-secondary"
+                >
+                  Add Promo Code
+                </button>
+              </div>
+
+              {Object.entries(formData.promoCodeDiscountCents).length > 0 && (
+                <div className="discounts-list">
+                  {Object.entries(formData.promoCodeDiscountCents).map(
+                    ([promoCodeId, discountCents]) => (
+                      <div key={promoCodeId} className="discount-item-row">
+                        <div className="discount-promo-code">
+                          {promoCodeId}
+                        </div>
+                        <div className="money-input">
+                          <CurrencySymbol currency={formData.currency} />
+                          <input
+                            type="number"
+                            min="0"
+                            value={centsToDollars(discountCents)}
+                            onChange={(e) =>
+                              updatePromoCodeDiscount(promoCodeId, e.target.value)
+                            }
+                            required
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removePromoCodeDiscount(promoCodeId)}
                           className="btn-remove"
                         >
                           Remove

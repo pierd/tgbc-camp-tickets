@@ -13,6 +13,11 @@ service cloud.firestore {
 
     match /camps/{campId} {
       allow read: if request.auth.uid != null;
+
+      match /promoCodes/{promoCodeId} {
+        // allow only get (no list, no write)
+        allow get: if request.auth.uid != null;
+      }
     }
 
     match /participants/{docId} {
