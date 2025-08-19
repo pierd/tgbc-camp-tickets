@@ -1,12 +1,10 @@
 import React, { useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useParams } from "react-router-dom";
 import { collectionT, useIsAdmin, useStreamDocumentById, whereT } from "../firebaseHooks";
 import {
   DbCollections,
   type DbCamp,
   type DbCampParticipant,
-  type DbProfile,
   type DbPromoCode,
 } from "shared";
 import {
@@ -18,19 +16,12 @@ import CampModal from "./CampModal";
 import { ParticipantProfile } from "./ParticipantProfile";
 import { formatDate } from "../utils";
 import { collection, type CollectionReference } from "firebase/firestore";
+import { DashboardHeader } from "./DashboardHeader";
 
 export const AdminCampDetails: React.FC = () => {
   const { campId } = useParams<{ campId: string }>();
-  const { currentUser } = useAuth();
   const isAdmin = useIsAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Fetch user profile
-  const profileData = useStreamDocumentById(
-    collectionT<DbProfile>(DbCollections.profiles),
-    currentUser?.uid
-  );
-  const profile = profileData.value?.data() as DbProfile | undefined;
 
   // Get camp details
   const campData = useStreamDocumentById(collectionT<DbCamp>(DbCollections.camps), campId);
@@ -81,25 +72,14 @@ export const AdminCampDetails: React.FC = () => {
 
   return (
     <div className="admin-camp-details">
-      <header className="admin-header">
-        <div className="admin-header-content">
-          <div>
-            <h1>Camp Details: {camp.name}</h1>
-            <p>Welcome, {profile?.name || currentUser?.email}</p>
-          </div>
-          <div className="admin-nav">
-            <Link to="/admin" className="nav-link">
-              ← Back to Admin
-            </Link>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="btn-primary edit-camp-btn"
-            >
-              Edit Camp
-            </button>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader title={`Camp Details: ${camp.name}`} showLink="admin">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="btn-primary edit-camp-btn"
+        >
+          Edit Camp
+        </button>
+      </DashboardHeader>
 
       <main className="admin-content">
         {/* Camp Details Section */}

@@ -1,38 +1,28 @@
 import React, { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
 import { Link } from "react-router-dom";
 import {
   useIsAdmin,
   useFirebaseQuery,
   queryT,
   orderByT,
-  useStreamDocumentById,
   collectionT,
 } from "../firebaseHooks";
 import {
   DbCollections,
   type DbCamp,
   Currency,
-  type DbProfile,
 } from "shared";
 import CampModal from "./CampModal";
 import { formatDate } from "../utils";
+import { DashboardHeader } from "./DashboardHeader";
 
 export const AdminDashboard: React.FC = () => {
-  const { currentUser } = useAuth();
   const isAdmin = useIsAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [campToEdit, setCampToEdit] = useState<
     (DbCamp & { id: string }) | undefined
   >();
-
-  // Fetch user profile
-  const profileData = useStreamDocumentById(
-    collectionT<DbProfile>(DbCollections.profiles),
-    currentUser?.uid
-  );
-  const profile = profileData.value?.data() as DbProfile | undefined;
 
   // Get camps from Firebase
   const campsRef = collectionT<DbCamp>(DbCollections.camps);
@@ -70,19 +60,7 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="admin-dashboard">
-      <header className="admin-header">
-        <div className="admin-header-content">
-          <div>
-            <h1>Admin Dashboard</h1>
-            <p>Welcome, {profile?.name || currentUser?.email}</p>
-          </div>
-          <div className="admin-nav">
-            <Link to="/" className="nav-link">
-              Dashboard
-            </Link>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader title="Admin Dashboard" showLink="dashboard" />
 
       <main className="admin-content">
         <div className="admin-section">

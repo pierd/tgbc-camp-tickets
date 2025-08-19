@@ -1,7 +1,5 @@
 import { useAuth } from "../contexts/AuthContext";
-import { Link } from "react-router-dom";
 import {
-  useIsAdmin,
   useFirebaseQuery,
   queryT,
   orderByT,
@@ -30,6 +28,7 @@ import JoinCampModal from "./JoinCampModal";
 import PaymentModal from "./PaymentModal";
 import ProfileModal from "./ProfileModal";
 import { formatDate } from "../utils";
+import { DashboardHeader } from "./DashboardHeader";
 
 const joinCamp = httpsCallable<JoinCampRequest, PaymentResponse>(
   functions,
@@ -43,8 +42,7 @@ const payInstallment = httpsCallable<PayInstallmentRequest, PaymentResponse>(
 type CampWithId = DbCamp & { id: CampId };
 
 export function Dashboard() {
-  const { currentUser, logout } = useAuth();
-  const isAdmin = useIsAdmin();
+  const { currentUser } = useAuth();
   const [joinModalCamp, setJoinModalCamp] = useState<CampWithId | null>(null);
   const [paymentModalCamp, setPaymentModalCamp] = useState<CampWithId | null>(null);
   const [, setShowProfileModal] = useState(false);
@@ -93,7 +91,7 @@ export function Dashboard() {
   );
 
   // Check if profile is complete
-  const profile = profileData.value?.data() as DbProfile | undefined;
+  const profile = profileData.value?.data();
   const isProfileIncomplete = !isProfileComplete(profile);
 
   // Show profile modal if profile is incomplete
@@ -289,14 +287,6 @@ export function Dashboard() {
     );
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Failed to log out:", error);
-    }
-  };
-
   const campTicketsUrl = "https://www.toughguybookclub.com/camp_tickets_iframe";
 
   const handleJoinCamp = async ({campId, location, promoCode}: {campId: string; location: string; promoCode: string}) => {
@@ -456,20 +446,7 @@ export function Dashboard() {
 
   return (
     <div className="dashboard">
-      <header className="dashboard-header">
-        <h1>Dashboard</h1>
-        <div className="user-info">
-          <span>Welcome, {profile?.name || currentUser?.email}</span>
-          {isAdmin && (
-            <Link to="/admin" className="nav-link">
-              Admin
-            </Link>
-          )}
-          <button onClick={handleLogout} className="logout-btn">
-            Logout
-          </button>
-        </div>
-      </header>
+      <DashboardHeader title="Camp Tickets" showLink="admin" />
 
       {/* Payment result banner */}
       {paymentBanner && (

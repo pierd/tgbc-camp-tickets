@@ -7,7 +7,14 @@ export function AuthPage() {
   return (
     <div className="auth-page">
       <div className="auth-container">
-        <h1>Welcome</h1>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <img
+            src="/TGBC_Logo_Transparent_PNG_2024.png"
+            alt="TGBC Logo"
+            style={{ width: "100px", height: "auto" }}
+          />
+        </div>
+        <h1>Welcome to TGBC Camp Tickets</h1>
         <p>Please sign in to continue</p>
 
         <AuthForm mode={mode} />
