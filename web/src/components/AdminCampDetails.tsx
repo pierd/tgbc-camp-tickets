@@ -156,15 +156,23 @@ export const AdminCampDetails: React.FC = () => {
                     <div className="participant-info">
                       <ParticipantProfile userId={participant.userId} />
                       <div className="participant-id">
-                        <strong>User ID:</strong> {participantDoc.id}
+                        <strong>User ID:</strong> {participant.userId}
                       </div>
                       <div className="participant-location">
                         <strong>Location:</strong>{" "}
                         {participant.location}
                       </div>
+                      <div className="participant-location">
+                        <strong>Promo Code:</strong>{" "}
+                        {participant.promoCode || "None"}
+                      </div>
                       <div className="participant-joined">
                         <strong>Joined:</strong>{" "}
                         {formatDate(participant.createdAt)}
+                      </div>
+                      <div className="participant-paid">
+                        <strong>Cost:</strong>{" "}
+                        {formatCurrency(participant.costCents)}
                       </div>
                       <div className="participant-paid">
                         <strong>Paid:</strong>{" "}
